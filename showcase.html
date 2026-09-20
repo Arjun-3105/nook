@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nook — Interactive Full Showcase & Viral Lab</title>
+  <style>
+    :root {
+      --brand: #2d6a4f;
+      --bg: #f8f6f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: #1f2937;
+      padding: 24px;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      padding: 16px 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--brand);
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .nav-pill {
+      background: #edf7ed;
+      color: var(--brand);
+      border: 1px solid #c8e6c9;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .nav-pill:hover, .nav-pill.active {
+      background: var(--brand);
+      color: white;
+    }
+    .grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+    }
+    .showcase-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+      border: 1px solid #eee8df;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-banner {
+      padding: 12px 18px;
+      background: #faf8f5;
+      border-bottom: 1px solid #eee8df;
+      font-weight: 700;
+      font-size: 13px;
+      color: #5c554a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .frame-container {
+      flex: 1;
+      height: 380px;
+      position: relative;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .creature-gallery {
+      grid-column: 1 / -1;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+    .creatures-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+      text-align: center;
+    }
+    .creature-card {
+      background: #faf8f5;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid #eee8df;
+      transition: transform 0.2s ease;
+    }
+    .creature-card:hover {
+      transform: translateY(-4px) scale(1.05);
+    }
+    .creature-card img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+    .creature-label {
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 6px;
+      color: #374151;
+    }
+    .creature-sub {
+      font-size: 10px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand-title">
+      <span>🌱</span>
+      <span>Nook — Interactive Product Gallery</span>
+    </div>
+    <div class="toolbar-actions">
+      <a href="newtab/newtab.html" target="_blank" class="nav-pill active">Launch Live New Tab ↗</a>
+      <a href="popup/popup.html" target="_blank" class="nav-pill">Open Minimal Popup ↗</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Live New Tab View 01 -->
+    <div class="showcase-card" style="grid-column: 1 / -1; height: 580px;">
+      <div class="card-banner">
+        <span>01 — New Tab Page (The Terrarium Home)</span>
+        <span style="color:#16a34a;">● Live Interactive View</span>
+      </div>
+      <div class="frame-container" style="height: 520px;">
+        <iframe src="newtab/newtab.html"></iframe>
+      </div>
+    </div>
+
+    <!-- 8 Creature States & Expressions -->
+    <div class="creature-gallery">
+      <div class="card-banner" style="background:none; border:none; padding:0;">
+        <span style="font-size: 16px; font-weight:800; color:#1f2937;">The Creature — Expressions & States</span>
+        <span style="font-size:12px; color:#6b7280;">Extracted & rendered in high-res transparency</span>
+      </div>
+      <div class="creatures-row">
+        <div class="creature-card">
+          <img src="assets/creature/neutral.png" alt="Neutral" />
+          <div class="creature-label">Neutral</div>
+          <div class="creature-sub">(chilling)</div>
+        </div>
+        <div class="creature-card">
+          <img src="assets/creature/happy.png" alt="Happy" />
+          <div class="creature-label">Happy</div>
+          <div class="creature-sub">(things are tidy)</div>
+        </div>
+        <div class="creature-card">
+          <img src="assets/creature/curious.png" alt="Curious" />
+          <div class="creature-label">Curious</div>
+          <div class="creature-sub">(noticed something)</div>
+        </div>
+        <div class="creature-card">
+          <img src="assets/creature/excited.png" alt="Excited" />
+          <div class="creature-label">Excited</div>
+          <div class="creature-sub">(making progress)</div>
+        </div>
+        <div class="creature-card">
+          <img src="assets/creature/sleepy.png" alt="Sleepy" />
+          <div class="creature-label">Sleepy</div>
+          <div class="creature-sub">(late / inactive)</div>
+        </div>
+        <div class="creature-card">
+          <img src="assets/creature/concerned.png" alt="Concerned" />
+          <div class="creature-label">Concerned</div>
+          <div class="creature-sub">(many stale tabs)</div>
+        </div>
+        <div class="creature-card">
+          <img src="assets/creature/sad.png" alt="Sad" />
+          <div class="creature-label">Sad</div>
+          <div class="creature-sub">(forgotten items)</div>
+        </div>
+        <div class="creature-card">
+          <img src="assets/creature/proud.png" alt="Proud" />
+          <div class="creature-label">Proud</div>
+          <div class="creature-sub">(you cleaned up!)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup Screen 09 -->
+    <div class="showcase-card">
+      <div class="card-banner">
+        <span>09 — Minimal Toolbar Popup</span>
+      </div>
+      <div class="frame-container" style="display:flex; justify-content:center; align-items:center; background:#f9fafb;">
+        <iframe src="popup/popup.html" style="width:290px; height:280px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.08);"></iframe>
+      </div>
+    </div>
+
+    <!-- Viral Share to X Info Card -->
+    <div class="showcase-card">
+      <div class="card-banner">
+        <span>Viral Feature: 1-Click Share to X</span>
+      </div>
+      <div style="padding: 24px; display: flex; flex-direction: column; justify-content: center; height: 100%;">
+        <h3 style="font-size: 16px; margin-bottom: 8px;">🌱 X-Ready Terrarium Snapshots</h3>
+        <p style="font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 16px;">
+          Turn browser cleanup into organic virality on X / Twitter. Users click "Share" on the new tab to generate a beautiful, personalized aesthetic summary card featuring their cozy creature mood, tab hygiene metrics, and revived bookmarks.
+        </p>
+        <button onclick="window.open('newtab/newtab.html', '_blank')" class="nav-pill" style="text-align: center; border:none; width: 100%;">Test in Live New Tab →</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+

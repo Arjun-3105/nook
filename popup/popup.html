@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Nook</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header -->
+    <div class="header">
+      <div class="brand-row">
+        <span class="brand">🌱 Nook</span>
+        <span class="tagline">Your browser remembers</span>
+      </div>
+      <button class="share-btn" id="btnShareX" title="Copy X / Twitter share card">
+        <span>✨ Share</span>
+      </button>
+    </div>
+
+    <!-- 3D Creature Interactive Header -->
+    <div class="status-row" id="creatureCard" title="Poke Nook!">
+      <div class="creature-wrap" id="statusCreature">
+        <div class="body" id="statusBody">
+          <div class="sprout">
+            <div class="sprout-stem"></div>
+            <div class="sprout-leaf"></div>
+          </div>
+          <div class="face">
+            <div class="eyes">
+              <div class="eye" id="sEyeL"></div>
+              <div class="eye" id="sEyeR"></div>
+            </div>
+            <div class="mouth" id="sMouth"></div>
+          </div>
+          <div class="cheeks">
+            <div class="cheek"></div>
+            <div class="cheek"></div>
+          </div>
+          <div class="leaf-blanket"></div>
+          <div class="snore-zzz">z Z Z</div>
+        </div>
+      </div>
+      <div class="status-text">
+        <div class="status-title" id="statusTitle">All quiet for now.</div>
+        <div class="status-sub" id="statusSub">Nook is watching in the background.</div>
+      </div>
+    </div>
+
+    <!-- Clickable Stat Metric Badges -->
+    <div class="stats">
+      <div class="stat active" id="statCardOverview" data-tab="overview">
+        <span class="stat-num" id="statTabs">—</span>
+        <span class="stat-label">open tabs</span>
+      </div>
+      <div class="stat" id="statCardStale" data-tab="sessions">
+        <span class="stat-num amber" id="statStale">—</span>
+        <span class="stat-label">stale</span>
+      </div>
+      <div class="stat" id="statCardDecay" data-tab="bookmarks">
+        <span class="stat-num red" id="statDecay">—</span>
+        <span class="stat-label">decaying</span>
+      </div>
+    </div>
+
+    <!-- Navigation Pills -->
+    <div class="nav-pills">
+      <button class="nav-pill active" data-tab="overview">🌱 Action</button>
+      <button class="nav-pill" data-tab="sessions">🗂️ Sessions</button>
+      <button class="nav-pill" data-tab="bookmarks">🍂 Bookmarks</button>
+      <button class="nav-pill" data-tab="reading">📖 Reading</button>
+    </div>
+
+    <!-- Content Views -->
+    <div class="tab-content" id="tabContent">
+      
+      <!-- 1. OVERVIEW / ACTION TAB -->
+      <div class="tab-panel active" id="panelOverview">
+        <!-- Quick Action Cards (Dynamically populated) -->
+        <div class="action-cards" id="overviewCards">
+          <!-- Populated by JS: Cluster Nudge, Stale Nudge, Decaying Nudge -->
+        </div>
+
+        <div class="quick-tools">
+          <button class="tool-btn danger-cleanse" id="btnDeclareBankruptcy" title="Safely tuck all tabs away into an archive and start completely fresh">
+            <span class="tool-icon">⏳</span>
+            <span class="tool-text">Declare Tab Bankruptcy</span>
+            <span class="badge-fresh">Clean Slate</span>
+          </button>
+          <button class="tool-btn" id="btnGroupBySite">
+            <span class="tool-icon">🌐</span>
+            <span class="tool-text">Group Tabs by Site (Domain)</span>
+          </button>
+          <button class="tool-btn" id="btnGroupAll">
+            <span class="tool-icon">🗂️</span>
+            <span class="tool-text">Group All into Focus Session</span>
+          </button>
+          <button class="tool-btn secondary" id="btnShowWidget">
+            <span class="tool-icon">🌿</span>
+            <span class="tool-text">Show Floating Creature on Page</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. SESSIONS TAB -->
+      <div class="tab-panel" id="panelSessions">
+        <div class="panel-section-head">
+          <span class="panel-section-title">Focus & Saved Sessions</span>
+          <button class="btn-xs" id="btnSaveCurrentSession">+ Save Current</button>
+        </div>
+        <div class="item-list" id="sessionsList">
+          <div class="empty-state">No saved sessions yet. Group tabs to create one!</div>
+        </div>
+      </div>
+
+      <!-- 3. DECAYING BOOKMARKS TAB -->
+      <div class="tab-panel" id="panelBookmarks">
+        <div class="panel-section-head">
+          <span class="panel-section-title">Bookmark Lifecycle</span>
+          <span class="sub-counter" id="bookmarkCounter">—</span>
+        </div>
+        <div class="item-list" id="bookmarksFullList">
+          <div class="empty-state">Loading bookmarks...</div>
+        </div>
+      </div>
+
+      <!-- 4. READING POSITIONS TAB -->
+      <div class="tab-panel" id="panelReading">
+        <div class="panel-section-head">
+          <span class="panel-section-title">Saved Reading Points</span>
+        </div>
+        <div class="item-list" id="readingList">
+          <div class="empty-state">No reading points recorded yet. Scroll down long articles to save your place!</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Settings Toggle Bar -->
+    <div class="drawer-header" id="settingsToggle">
+      <span>⚙️ Settings & Data</span>
+      <span class="toggle-arrow" id="settingsArrow">▼</span>
+    </div>
+    <div class="settings-drawer" id="settingsDrawer">
+      <div class="setting-row">
+        <span>Exclude incognito</span>
+        <label class="toggle"><input type="checkbox" checked id="setIncognito"><span class="knob"></span></label>
+      </div>
+      <div class="setting-row">
+        <span>Return Point tracking</span>
+        <label class="toggle"><input type="checkbox" checked id="setReturnPoint"><span class="knob"></span></label>
+      </div>
+      <div class="footer-actions">
+        <button class="link-btn" id="btnExport">Export data (JSON)</button>
+        <button class="link-btn danger" id="btnClear">Clear all data</button>
+      </div>
+    </div>
+
+    <!-- Bankruptcy Celebration Modal -->
+    <div class="bankruptcy-modal" id="bankruptcyModal">
+      <div class="modal-card">
+        <div class="modal-emoji">🌱</div>
+        <div class="modal-title">Tab Bankruptcy Declared!</div>
+        <div class="modal-desc" id="modalDesc">
+          I've safely archived your tabs. Enjoy your clean slate! 🍃
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn share" id="btnTweetBankruptcy">🐦 Tweet My Cleanse</button>
+          <button class="modal-btn close" id="btnCloseModal">Start Fresh</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notice -->
+    <div class="toast" id="toast">Copied to clipboard! 📋</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
