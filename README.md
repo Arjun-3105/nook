@@ -10,37 +10,48 @@ Nook is a local-first, cozy browser companion for people who accumulate tabs, bo
 
 ## 🌿 Core Features
 
-1. **Tab Terrarium (Screen 01)**
-   - Cozy room terrarium view on every New Tab.
-   - Ambient creature resting on the sunbed reacting dynamically to your tab hygiene.
-   - Live clock, warm greeting, and quick search.
+1. **Living Creature Companion (In-Page & Popup)**
+   - 8 dynamic emotional states (*Neutral, Happy, Curious, Excited, Sleepy, Concerned, Sad, Proud*), poke interactions, and contextual dialogue based on real browsing habits.
+   - Pure CSS 3D animated companion with eyes, cheeks, leaf sprout, and snore animations.
 
-2. **Return Point (Content Script & Screen 04)**
-   - Remembers reading position on long technical articles, GitHub issues, and documentation.
-   - Floating leaf pill quietly appears when you return: *"You left off here — Take me there"*.
+2. **🍱 Bento To-Do Board & Tab Mission Notes**
+   - Built-in Bento To-Do workspace right inside the extension popup: Big Goal, Supporting Tasks, and Micro Tab Tasks.
+   - 1-line micro-mission notes answering *"Why did I open this?"* attached directly to active tabs.
+   - Instant 1-click button to attach any current tab as an actionable task on your Bento board.
 
-3. **Stale Tabs Nudge (Screen 02)**
-   - Ambiently notices tabs unopened for >2 hours.
-   - 1-click **Archive to Session** so you never lose context, without tab clutter.
+3. **🔍 Universal Search & Quick Navigator**
+   - Instant search bar with `/` keyboard shortcut.
+   - Live query across open tabs, remembered reading points, saved sessions, and to-do tasks.
 
-4. **New-Tab Regroup (Screen 03)**
-   - Smart opener-chain & time-proximity clustering.
-   - Notices research sessions (e.g. GitHub + StackOverflow + Docs) and offers to organize them into native Chrome tab groups.
+4. **⚡ Spotlight Focus Dock**
+   - Ambient priority focus bar for your current mission.
+   - 1-click completion with celebratory creature animations and zero unnecessary tab closes.
 
-5. **Decaying Bookmarks (Screens 06 & 07)**
-   - Visual lifecycle for bookmarks:
-     - 🍃 **Fresh** (0–7 days)
-     - 🍂 **Aging** (7–30 days)
-     - 🥀 **Faded** (30–60 days)
-     - 🍂 **Decayed** (60+ days)
-   - Click to **Revive (Open)**, **Snooze**, or **Archive snapshot**.
+5. **📁 Accordion Fold**
+   - Non-destructive tab group collapse keeping tabs alive in memory while cleanly compacting the tab bar.
 
-6. **The Creature — 8 Emotional States**
-   - *Neutral, Happy, Curious, Excited, Sleepy, Concerned, Sad, Proud*.
-   - Reacts to your state: cleans tabs → Proud; accumulation → Concerned; late hours → Sleepy.
+6. **🌐 Smart Tab Clustering & Domain Grouping**
+   - Opener-chain research thread clustering and 1-click grouping by domain (with duplicate-skipping and distinct color coding).
 
-7. **Viral 𝕏 / Twitter Terrarium Card Generator**
-   - Click **Share** on the new tab dock to render a high-aesthetic graphic card showing your creature and browser hygiene stats to post directly on X!
+7. **📖 Return Point (Reading Position Memory & Jump Back)**
+   - Remembers exact scroll depth on articles, documentation, and long threads.
+   - Jump Back feature automatically switches/opens the tab, smoothly scrolls to the exact point, and pulses an ambient green beam with an eye-line badge.
+
+8. **🍂 Decaying Bookmarks & Evergreen Keeps**
+   - 4-stage visual bookmark lifecycle: 🍃 **Fresh** (0–7d), 🍂 **Aging** (7–30d), 🥀 **Faded** (30–60d), 🍂 **Decayed** (60d+).
+   - 1-click revive, snooze, and ⭐ Forever / 🌲 Kept evergreen status protection.
+
+9. **🍃 Tab Bankruptcy (Guilt-Free Clean Slate)**
+   - Safely tucks open tabs into an archival session with 1-click instant restore anytime.
+
+10. **🛌 Late-Night Sleep Mode & Morning Queue**
+    - Late-night scroll detection on rabbit-hole sites, sleeping leaf blanket animation, and morning reading queue.
+
+11. **🌱 Tab Terrarium & Viral 𝕏 Share Card**
+    - Cozy new tab terrarium view and 1-click clipboard / tweet status card generator.
+
+12. **🔒 100% On-Device Privacy**
+    - Local storage only (`chrome.storage.local`), zero cloud telemetry, no analytics, and sensitive domain exclusions (banking, auth, government).
 
 ---
 

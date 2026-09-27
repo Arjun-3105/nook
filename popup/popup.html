@@ -63,9 +63,17 @@
       </div>
     </div>
 
+    <!-- Instant Search Bar (Tabs, Reading, Bookmarks, To-Dos) -->
+    <div class="search-bar-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="globalSearchInput" placeholder="Search tabs, reading points, bookmarks… (Press /)" autocomplete="off" />
+      <button class="search-clear-btn" id="btnSearchClear" style="display:none;" title="Clear search">✕</button>
+    </div>
+
     <!-- Navigation Pills -->
     <div class="nav-pills">
       <button class="nav-pill active" data-tab="overview">🌱 Action</button>
+      <button class="nav-pill" data-tab="intents">🍱 To-Do</button>
       <button class="nav-pill" data-tab="sessions">🗂️ Sessions</button>
       <button class="nav-pill" data-tab="bookmarks">🍂 Bookmarks</button>
       <button class="nav-pill" data-tab="reading">📖 Reading</button>
@@ -73,6 +81,15 @@
 
     <!-- Content Views -->
     <div class="tab-content" id="tabContent">
+
+      <!-- 0. INSTANT SEARCH RESULTS VIEW (Visible when searching) -->
+      <div class="tab-panel" id="panelSearch" style="display:none;">
+        <div class="panel-section-head">
+          <span class="panel-section-title">Search Results</span>
+          <span class="sub-counter" id="searchCountBadge">0 matches</span>
+        </div>
+        <div class="search-results-list" id="searchResultsList"></div>
+      </div>
       
       <!-- 1. OVERVIEW / ACTION TAB -->
       <div class="tab-panel active" id="panelOverview">
@@ -82,6 +99,11 @@
         </div>
 
         <div class="quick-tools">
+          <button class="tool-btn highlight-tool" id="btnToggleFoldGroups" title="Fold/Collapse native tab groups to instantly tidy your tab bar without closing anything">
+            <span class="tool-icon" id="foldIcon">📁</span>
+            <span class="tool-text" id="toggleFoldText">Fold Tab Groups</span>
+            <span class="badge-fresh" id="foldBadge" style="background:#e0e7ff;color:#4338ca;">Keep Alive</span>
+          </button>
           <button class="tool-btn danger-cleanse" id="btnDeclareBankruptcy" title="Safely tuck all tabs away into an archive and start completely fresh">
             <span class="tool-icon">⏳</span>
             <span class="tool-text">Declare Tab Bankruptcy</span>
@@ -102,7 +124,69 @@
         </div>
       </div>
 
-      <!-- 2. SESSIONS TAB -->
+      <!-- 2. BENTO TO-DO & FOCUS TAB -->
+      <div class="tab-panel" id="panelIntents">
+        <div class="bento-container">
+          <!-- Bento Header -->
+          <div class="bento-header">
+            <div class="bento-title">🍱 Bento Focus & To-Do Board</div>
+            <div class="bento-badge" id="bentoProgressBadge">0/0 completed</div>
+          </div>
+
+          <!-- Quick Add Task Card -->
+          <div class="bento-input-card">
+            <div class="bento-input-row">
+              <input type="text" class="bento-text-input" id="inputBentoTask" placeholder="Add a new task or mission…" maxlength="120" />
+              <select class="bento-tier-select" id="selectBentoTier" title="Choose task box size">
+                <option value="large">🍱 Big Focus (1 Max)</option>
+                <option value="medium" selected>🥗 Medium Task</option>
+                <option value="small">🥢 Quick Tab Micro</option>
+              </select>
+              <button class="bento-add-btn" id="btnAddBentoTask">+ Add</button>
+            </div>
+            <!-- Quick attach active tab intent button -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+              <span style="font-size:10px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px;" id="currentTabLabel">Tab: Loading…</span>
+              <button class="btn-xs" id="btnAttachTabAsTask" style="font-size:9.5px; padding:2px 6px;">+ Attach Tab as Micro-Task</button>
+            </div>
+          </div>
+
+          <!-- Compartment 1: Large Box (1 Big Priority / Deep Work / Spotlight Focus) -->
+          <div class="bento-box large" id="bentoLargeBox">
+            <div class="bento-box-head">
+              <span class="bento-box-label green">🍱 1 Priority Focus (Spotlight Goal)</span>
+              <span class="sub-counter" id="bentoLargeCounter">Deep Work</span>
+            </div>
+            <div class="bento-task-list" id="bentoLargeList">
+              <!-- Dynamically populated or empty prompt -->
+            </div>
+          </div>
+
+          <!-- Compartment 2: Medium Box (2-3 Supporting Focus Tasks) -->
+          <div class="bento-box medium" id="bentoMediumBox">
+            <div class="bento-box-head">
+              <span class="bento-box-label blue">🥗 Supporting Tasks (Maintenance & Work)</span>
+              <span class="sub-counter" id="bentoMediumCounter">0 tasks</span>
+            </div>
+            <div class="bento-task-list" id="bentoMediumList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Compartment 3: Small Box (Micro-Tasks & Tab Intent Notes) -->
+          <div class="bento-box small" id="bentoSmallBox">
+            <div class="bento-box-head">
+              <span class="bento-box-label gray">🥢 Micro-Tasks & Open Tab Intents</span>
+              <span class="sub-counter" id="bentoSmallCounter">0 items</span>
+            </div>
+            <div class="bento-task-list" id="bentoSmallList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SESSIONS TAB -->
       <div class="tab-panel" id="panelSessions">
         <div class="panel-section-head">
           <span class="panel-section-title">Focus & Saved Sessions</span>
@@ -113,23 +197,36 @@
         </div>
       </div>
 
-      <!-- 3. DECAYING BOOKMARKS TAB -->
+      <!-- 4. DECAYING BOOKMARKS TAB -->
       <div class="tab-panel" id="panelBookmarks">
         <div class="panel-section-head">
           <span class="panel-section-title">Bookmark Lifecycle</span>
           <span class="sub-counter" id="bookmarkCounter">—</span>
+        </div>
+        <div class="filter-pills-row">
+          <button class="filter-pill active" id="filterBmAll" data-filter="all">All</button>
+          <button class="filter-pill" id="filterBmDecaying" data-filter="decaying">Decaying 🍂</button>
+          <button class="filter-pill" id="filterBmEvergreen" data-filter="evergreen">Evergreen 🌲</button>
         </div>
         <div class="item-list" id="bookmarksFullList">
           <div class="empty-state">Loading bookmarks...</div>
         </div>
       </div>
 
-      <!-- 4. READING POSITIONS TAB -->
+      <!-- 5. READING POSITIONS TAB -->
       <div class="tab-panel" id="panelReading">
         <div class="panel-section-head">
           <span class="panel-section-title">Saved Reading Points</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="sub-counter" id="readingCounter">—</span>
+            <button class="btn-xs danger-text" id="btnClearReading" title="Clear all reading points" style="display:none; background:none; border:none; color:#ef4444; font-size:10px; cursor:pointer; font-weight:600; padding:2px 4px;">Clear all</button>
+          </div>
         </div>
-        <div class="item-list" id="readingList">
+        <div class="reading-hint-bar">
+          <span class="reading-hint-icon">📖</span>
+          <span class="reading-hint-text">Auto-remembers your exact scroll depth on articles & long reads.</span>
+        </div>
+        <div class="reading-list-container" id="readingList">
           <div class="empty-state">No reading points recorded yet. Scroll down long articles to save your place!</div>
         </div>
       </div>
@@ -153,6 +250,23 @@
       <div class="footer-actions">
         <button class="link-btn" id="btnExport">Export data (JSON)</button>
         <button class="link-btn danger" id="btnClear">Clear all data</button>
+      </div>
+    </div>
+
+    <!-- Bankruptcy Confirmation Modal (Cozy In-Popup) -->
+    <div class="bankruptcy-modal" id="confirmBankruptcyModal">
+      <div class="modal-card">
+        <div class="modal-emoji">🍃</div>
+        <div class="modal-title">Declare Tab Bankruptcy?</div>
+        <div class="modal-desc">
+          All open tabs will be safely tucked into an archive so you can start completely fresh with zero guilt.
+          <br><br>
+          You can restore them anytime with 1 click!
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn danger-cleanse-btn" id="btnConfirmBankruptcy">Declare Bankruptcy (Clean Slate)</button>
+          <button class="modal-btn close" id="btnCancelBankruptcy">Keep My Tabs</button>
+        </div>
       </div>
     </div>
 

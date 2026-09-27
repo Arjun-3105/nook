@@ -442,11 +442,20 @@
     .card-btn.green{background:#2d6a4f;color:#fff}.card-btn.green:hover{background:#245438}
     .card-btn.amber{background:#d97706;color:#fff}.card-btn.amber:hover{background:#b45309}
     .card-btn.indigo{background:#4f46e5;color:#fff}.card-btn.indigo:hover{background:#4338ca}
+    .card-btn.emerald{background:#059669;color:#fff}.card-btn.emerald:hover{background:#047857}
+    .card-btn.blue{background:#2563eb;color:#fff}.card-btn.blue:hover{background:#1d4ed8}
+    .card-btn.purple{background:#7c3aed;color:#fff}.card-btn.purple:hover{background:#6d28d9}
 
     .session-name-row{display:none;align-items:center;gap:6px;margin-top:6px;width:100%}
     .session-input{flex:1;border:1px solid #c7d2fe;border-radius:7px;padding:5px 8px;font-size:11px;color:#1e293b;background:#fff;outline:none}
     .session-input:focus{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,.2)}
     .session-confirm{background:#4f46e5;color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer}
+
+    .tab-intent-row{display:none;align-items:center;gap:6px;margin-top:6px;width:100%}
+    .intent-inline-input{flex:1;border:1px solid #a7f3d0;border-radius:7px;padding:5px 8px;font-size:11px;color:#064e3b;background:#fff;outline:none}
+    .intent-inline-input:focus{border-color:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,.2)}
+    .intent-inline-confirm{background:#059669;color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer}
+    .intent-inline-confirm:hover{background:#047857}
     .empty{text-align:center;padding:14px 8px;font-size:12px;color:#94a3b8}
 
     /* footer */
@@ -531,6 +540,34 @@
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.local.get('nook_widget_hidden', (res) => {
       if (res.nook_widget_hidden) host.style.display = 'none';
+    });
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.nook_widget_hidden) {
+        if (!changes.nook_widget_hidden.newValue) {
+          host.style.display = 'block';
+        }
+      }
+    });
+  }
+
+  // ── Runtime message listener ──────────────────────────────────
+  if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg.type === 'SHOW_NOOK_WIDGET') {
+        host.style.display = 'block';
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+          chrome.storage.local.remove('nook_widget_hidden');
+        }
+        openPanel();
+        sendResponse({ success: true });
+        return true;
+      }
+      if (msg.type === 'SCROLL_AND_HIGHLIGHT') {
+        triggerResumeHighlight(msg.scrollY, msg.percentage, msg.title);
+        sendResponse({ success: true });
+        return true;
+      }
     });
   }
 
@@ -633,159 +670,273 @@
     tick();
   }
 
+  // ── Jump Back / Resume Glow & Smooth Scroll ───────────────────
+  function triggerResumeHighlight(targetY, pct, title) {
+    if (typeof targetY === 'number') {
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
+      setTimeout(() => {
+        if (Math.abs(window.scrollY - targetY) > 60) {
+          window.scrollTo({ top: targetY, behavior: 'smooth' });
+        }
+      }, 350);
+    }
+
+    document.getElementById('nook-resume-beam')?.remove();
+    document.getElementById('nook-resume-pill')?.remove();
+    document.getElementById('nook-resume-anim')?.remove();
+
+    const beam = document.createElement('div');
+    beam.id = 'nook-resume-beam';
+    beam.style.cssText = `
+      position: fixed;
+      top: 32%;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent 0%, #10b981 25%, #34d399 50%, #10b981 75%, transparent 100%);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.85), 0 0 32px rgba(16, 185, 129, 0.45);
+      z-index: 2147483640;
+      pointer-events: none;
+      animation: nookBeamFade 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    `;
+
+    const pill = document.createElement('div');
+    pill.id = 'nook-resume-pill';
+    pill.style.cssText = `
+      position: fixed;
+      top: calc(32% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(8px);
+      color: #ecfdf5;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.4);
+      z-index: 2147483641;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      animation: nookPillFade 3.0s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    `;
+    pill.innerHTML = `<span>📖</span> <span>Resumed reading · <strong>${pct || 0}% read</strong></span>`;
+
+    const animStyle = document.createElement('style');
+    animStyle.id = 'nook-resume-anim';
+    animStyle.textContent = `
+      @keyframes nookBeamFade {
+        0% { opacity: 0; transform: scaleY(0.4); }
+        15% { opacity: 1; transform: scaleY(1.5); }
+        70% { opacity: 1; transform: scaleY(1); }
+        100% { opacity: 0; transform: scaleY(0.2); }
+      }
+      @keyframes nookPillFade {
+        0% { opacity: 0; transform: translate(-50%, 8px) scale(0.95); }
+        15% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        75% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        100% { opacity: 0; transform: translate(-50%, -6px) scale(0.96); }
+      }
+    `;
+
+    document.head.appendChild(animStyle);
+    document.body.appendChild(beam);
+    document.body.appendChild(pill);
+
+    setTimeout(() => {
+      beam.remove();
+      pill.remove();
+      animStyle.remove();
+    }, 3200);
+
+    setEmotion('excited', `Welcome back! Picked up at ${pct || 0}% 📖`);
+  }
+
   // ── Build panel ───────────────────────────────────────────────
   function buildPanel() {
     panelBody.innerHTML = '';
 
-    // Return Point
-    if (pagePos?.scrollY > 300) {
+    const scrollMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const currPct = Math.min(100, Math.round((window.scrollY / scrollMax) * 100));
+
+    // 1. Reading Return Point / Scroll Bookmark
+    if (pagePos && pagePos.scrollY > 150) {
       const ago = fmtAgo(Date.now() - pagePos.timestamp);
-      addCard('return','📖','You left off here',`${ago} ago · ${pagePos.percentage||'?'}% through`,
-        'Resume','green', () => { window.scrollTo({top:pagePos.scrollY,behavior:'smooth'}); closePanel(); });
-    }
-
-    // Late-Night Sleep Mode: Save for Tomorrow Morning
-    const hour = new Date().getHours();
-    const isLateNight = hour >= 23 || hour < 6;
-    const isRabbitHole = ['youtube.com', 'twitter.com', 'x.com', 'reddit.com', 'netflix.com', 'twitch.tv', 'tiktok.com', 'instagram.com'].some(d => location.hostname.includes(d));
-
-    if (isLateNight && isRabbitHole) {
-      const sleepCard = addCard('sleep', '🛌', 'Save for Tomorrow Morning', 'Tuck this tab away & close so you can sleep peacefully', 'Save & Sleep', 'sleep', () => {
-        chrome.runtime.sendMessage({
-          type: 'SAVE_FOR_MORNING',
-          data: {
+      addCard('return', '📖', 'You left off here', `${ago} ago · ${pagePos.percentage || 0}% through`,
+        'Resume ↗', 'emerald', () => {
+          triggerResumeHighlight(pagePos.scrollY, pagePos.percentage, document.title);
+          closePanel();
+        });
+    } else {
+      addCard('return', '📖', 'Mark Reading Point', `Currently at ${currPct}% scroll depth`,
+        'Save 📍', 'green', () => {
+          pagePos = {
             url: location.href,
             title: document.title,
-            percentage: pagePos?.percentage || 0
-          }
-        }, () => {
-          setEmotion('sleepy', 'Saved! Sweet dreams, see you tomorrow 🌙');
-          sleepCard.style.opacity = '0';
-          sleepCard.style.transform = 'scale(0.92)';
-          sleepCard.style.transition = 'all 0.25s ease';
-          setTimeout(() => {
-            sleepCard.remove();
-            checkEmpty();
-          }, 250);
+            scrollY: window.scrollY,
+            percentage: currPct,
+            timestamp: Date.now()
+          };
+          chrome.runtime?.sendMessage({ type: 'RECORD_PAGE_POSITION', data: pagePos });
+          triggerResumeHighlight(window.scrollY, currPct, document.title);
+          buildPanel();
         });
-      });
     }
 
-    if (typeof chrome==='undefined'||!chrome.runtime) {
-      // demo fallback
-      setEmotion(isLateNight ? 'sleepy' : 'happy', isLateNight ? 'It\'s late... sweet dreams 😴' : 'All quiet for now. ✨');
+    if (typeof chrome === 'undefined' || !chrome.runtime) {
+      setEmotion('happy', 'All quiet for now. ✨');
       return;
     }
 
-    chrome.runtime.sendMessage({type:'GET_TAB_SUMMARY'}, res => {
-      if(!res) return;
-      const stale=(res.staleTabs||[]), clusters=(res.clusters||[]);
+    // 2. Fetch Tab Summary to populate companion actions
+    chrome.runtime.sendMessage({ type: 'GET_TAB_SUMMARY' }, res => {
+      if (!res) return;
 
-      if (clusters.length > 0) {
-        const cl = clusters[0];
-        const n  = cl.tabs?.length || '?';
-        const t  = cl.title || 'Focus Session';
-        const card = addCard('session','🗂️',`"${t}" — ${n} tabs`,'Click to save as a named focus session','Save Session','indigo', () => {
-          nameRow.style.display = 'flex';
-          nameRow.querySelector('.session-input').focus();
-        });
-        const nameRow = document.createElement('div');
-        nameRow.className='session-name-row';
-        nameRow.innerHTML=`<input class="session-input" value="${t}" placeholder="Name this session…" /><button class="session-confirm">Group →</button>`;
-        card.appendChild(nameRow);
+      const intents = res.tabIntents || {};
+      const thisIntent = intents[location.href]?.intent || '';
 
-        nameRow.querySelector('.session-input').addEventListener('click', e => e.stopPropagation());
-        nameRow.querySelector('.session-input').addEventListener('keydown', e => {
-          if (e.key === 'Enter') nameRow.querySelector('.session-confirm').click();
+      // Tab Mission Note
+      const intentCard = addCard('session', '🎯',
+        thisIntent ? `Mission: "${thisIntent}"` : 'Tab Mission Note',
+        thisIntent ? 'Click to edit your 1-line tab purpose' : 'Why did I open this? (1-line intent)',
+        thisIntent ? 'Edit ✏️' : 'Add Note +', 'blue', () => {
+          intentRow.style.display = intentRow.style.display === 'flex' ? 'none' : 'flex';
+          if (intentRow.style.display === 'flex') {
+            intentRow.querySelector('.intent-inline-input').focus();
+          }
         });
-        nameRow.querySelector('.session-confirm').addEventListener('click', (e)=>{
-          e.stopPropagation();
-          const name = nameRow.querySelector('.session-input').value || t;
-          chrome.runtime.sendMessage({type:'GROUP_TABS', tabIds:cl.tabs?.map(x=>x.id)||[], groupTitle:name});
-          chrome.runtime.sendMessage({type:'SAVE_SESSION', name, tabIds:cl.tabs?.map(x=>x.id)||[]});
-          setEmotion('excited',`"${name}" saved as a Focus Session! 🎉`);
-          card.style.opacity = '0';
-          card.style.transform = 'scale(0.92)';
-          card.style.transition = 'all 0.25s ease';
-          setTimeout(() => {
-            card.remove();
-            checkEmpty();
-          }, 250);
-        });
-      }
 
-      // Per-site domain grouping card (if any site has 2+ tabs)
-      const siteGroups = (res.siteGroups || []);
-      if (siteGroups.length > 0) {
-        const sg = siteGroups[0];
-        const siteCard = addCard('session', '🌐', `"${sg.title}" (${sg.count} tabs)`, `Group all ${sg.domain} tabs together`, 'Group Site', 'indigo', () => {
-          chrome.runtime.sendMessage({ type: 'GROUP_SPECIFIC_SITE', domain: sg.domain });
-          setEmotion('proud', `Grouped ${sg.count} tabs on ${sg.title}! 🌐`);
-          siteCard.style.opacity = '0';
-          siteCard.style.transform = 'scale(0.92)';
-          siteCard.style.transition = 'all 0.25s ease';
-          setTimeout(() => {
-            siteCard.remove();
-            checkEmpty();
-          }, 250);
-        });
-      }
+      const intentRow = document.createElement('div');
+      intentRow.className = 'tab-intent-row';
+      intentRow.innerHTML = `
+        <input class="intent-inline-input" value="${thisIntent.replace(/"/g, '&quot;')}" placeholder="Why did you open this tab?" />
+        <button class="intent-inline-confirm">Save</button>
+      `;
+      intentCard.appendChild(intentRow);
 
-      if (stale.length >= 3) {
-        const staleCard = addCard('stale','🌿',`${stale.length} tabs gathering dust`,
-          stale[0]?.title?.slice(0,36)||'Haven\'t been visited in a while','Archive','amber',
-          () => {
-            chrome.runtime.sendMessage({type:'ARCHIVE_STALE_TABS', tabIds:stale.map(t=>t.id)});
-            setEmotion('proud','Archived! So much breathing room 🌱');
-            staleCard.style.opacity = '0';
-            staleCard.style.transform = 'scale(0.92)';
-            staleCard.style.transition = 'all 0.25s ease';
-            setTimeout(() => {
-              staleCard.remove();
-              checkEmpty();
-            }, 250);
+      const input = intentRow.querySelector('.intent-inline-input');
+      const saveBtn = intentRow.querySelector('.intent-inline-confirm');
+
+      input.addEventListener('click', e => e.stopPropagation());
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') saveBtn.click();
+      });
+      saveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const note = input.value.trim();
+        chrome.runtime.sendMessage({
+          type: 'SET_TAB_INTENT',
+          url: location.href,
+          title: document.title,
+          intent: note
+        }, () => {
+          setEmotion('excited', note ? `Remembered: "${note.slice(0, 22)}"! 🎯` : 'Cleared intent note 🌱');
+          buildPanel();
+        });
+      });
+
+      // Priority Spotlight Focus Mode
+      const isSpotlight = res.activeSpotlight && res.activeSpotlight.activeTabUrl === location.href;
+      addCard('return', '⚡',
+        isSpotlight ? 'Spotlight Focus Active' : 'Spotlight Priority Focus',
+        isSpotlight ? 'Active priority focus on this tab' : 'Lock in without closing other tabs',
+        isSpotlight ? 'Done ✓' : 'Focus Tab', 'emerald', () => {
+          if (isSpotlight) {
+            chrome.runtime.sendMessage({ type: 'COMPLETE_SPOTLIGHT' }, () => {
+              setEmotion('proud', 'Spotlight complete! Great focus 🎉');
+              buildPanel();
+            });
+          } else {
+            const goal = thisIntent || document.title;
+            chrome.runtime.sendMessage({
+              type: 'SET_SPOTLIGHT',
+              spotlight: {
+                title: goal,
+                goal: goal,
+                activeTabUrl: location.href,
+                tabUrls: [location.href]
+              }
+            }, () => {
+              setEmotion('excited', 'Focus locked onto this page! 🎯');
+              buildPanel();
+            });
+          }
+        });
+
+      // Accordion Fold
+      const groupsCount = res.groupsCount || 0;
+      const isFolded = res.allGroupsCollapsed;
+      addCard('session', isFolded ? '📂' : '📁',
+        isFolded ? 'Unfold Tab Groups' : 'Accordion Fold Groups',
+        groupsCount > 0 ? `${groupsCount} active group(s) in tab bar` : 'Compact tab bar while keeping tabs alive',
+        isFolded ? 'Unfold' : 'Fold', 'indigo', () => {
+          chrome.runtime.sendMessage({ type: 'TOGGLE_FOLD_GROUPS' }, (fRes) => {
+            if (fRes?.success) {
+              setEmotion('proud', fRes.collapsed ? 'Folded tab groups! Tidy tab bar ✨' : 'Tab groups unfolded! 📂');
+              buildPanel();
+            } else {
+              setEmotion('curious', fRes?.reason || 'Group tabs by site first to fold!');
+            }
           });
+        });
+
+      // Site Groups
+      const siteGroups = res.siteGroups || [];
+      const currentSiteGroup = siteGroups.find(s => location.hostname.includes(s.domain));
+      if (currentSiteGroup && currentSiteGroup.count >= 2) {
+        addCard('session', '🌐', `Group "${currentSiteGroup.title}" (${currentSiteGroup.count} tabs)`, `Organize all ${currentSiteGroup.domain} tabs together`, 'Group Site', 'indigo', () => {
+          chrome.runtime.sendMessage({ type: 'GROUP_SPECIFIC_SITE', domain: currentSiteGroup.domain });
+          setEmotion('proud', `Grouped ${currentSiteGroup.count} tabs on ${currentSiteGroup.title}! 🌐`);
+          buildPanel();
+        });
       }
 
-      // Tab Overload / Bankruptcy (if 8+ open tabs)
-      const totalTabs = (res.totalTabs || 0);
-      if (totalTabs >= 8) {
-        const bCard = addCard('stale', '⏳', `Tab Overload (${totalTabs} tabs)`, 'Declare Tab Bankruptcy & start fresh with zero guilt?', 'Cleanse', 'amber', () => {
-          if (!confirm(`Declare Tab Bankruptcy? 🍃\n\nAll ${totalTabs} open tabs will be tucked safely into an archive. You can start completely fresh and restore them anytime!`)) return;
+      // Tab Bankruptcy / Clean Slate
+      const totalTabs = res.totalTabs || 0;
+      if (totalTabs >= 4) {
+        addCard('stale', '🍃', `Tab Clean Slate (${totalTabs} tabs)`, 'Archive open tabs safely with 1-click restore', 'Tuck Away', 'amber', () => {
           chrome.runtime.sendMessage({ type: 'DECLARE_BANKRUPTCY' }, (bRes) => {
             if (bRes?.success) {
-              setEmotion('proud', `Bankruptcy declared! All ${bRes.count} tabs tucked away 🍃`);
-              bCard.style.opacity = '0';
-              bCard.style.transform = 'scale(0.92)';
-              bCard.style.transition = 'all 0.25s ease';
-              setTimeout(() => {
-                bCard.remove();
-                checkEmpty();
-              }, 250);
+              setEmotion('proud', `Tucked ${bRes.count} tabs away safely! 🍃`);
+              buildPanel();
             }
           });
         });
       }
 
-      adaptCreature(stale.length, clusters.length, siteGroups.length, totalTabs);
+      // Late-Night Sleep
+      const hour = new Date().getHours();
+      const isLateNight = hour >= 23 || hour < 6;
+      const isRabbitHole = ['youtube.com', 'twitter.com', 'x.com', 'reddit.com', 'netflix.com', 'twitch.tv', 'tiktok.com', 'instagram.com'].some(d => location.hostname.includes(d));
+      if (isLateNight && isRabbitHole) {
+        addCard('sleep', '🛌', 'Save for Tomorrow Morning', 'Tuck this tab away & rest with zero guilt', 'Save & Sleep', 'amber', () => {
+          chrome.runtime.sendMessage({
+            type: 'SAVE_FOR_MORNING',
+            data: { url: location.href, title: document.title, percentage: pagePos?.percentage || 0 }
+          }, () => {
+            setEmotion('sleepy', 'Saved for tomorrow morning! Sweet dreams 🌙');
+            setTimeout(() => window.close(), 600);
+          });
+        });
+      }
+
+      adaptCreature(res.staleTabs?.length || 0, res.clusters?.length || 0, siteGroups.length, totalTabs);
       checkEmpty();
     });
 
-    chrome.runtime.sendMessage({type:'GET_BOOKMARKS_LIFECYCLE'}, res => {
-      if(!res?.bookmarks) return;
-      res.bookmarks.filter(b=>b.stage==='faded'||b.stage==='decayed').slice(0,2).forEach(b=>{
-        const leaf = b.stage==='decayed'?'🥀':'🍂';
-        const card = addCard('decay',leaf,b.title?.slice(0,36)||'Forgotten bookmark',`${b.ageDays}d forgotten · ${b.domain||''}`,
-          'Revive','green', () => {
-            chrome.runtime.sendMessage({type:'REVIVE_BOOKMARK', id:b.id, url:b.url});
-            setEmotion('excited',`Revived! Fresh leaf sprout for "${(b.title||'bookmark').slice(0,18)}" 🌱`);
-            card.style.opacity = '0';
-            card.style.transform = 'scale(0.92)';
-            card.style.transition = 'all 0.25s ease';
-            setTimeout(() => {
-              card.remove();
-              checkEmpty();
-            }, 250);
+    // Bookmarks Lifecycle
+    chrome.runtime.sendMessage({ type: 'GET_BOOKMARKS_LIFECYCLE' }, res => {
+      if (!res?.bookmarks) return;
+      res.bookmarks.filter(b => (b.stage === 'faded' || b.stage === 'decayed') && !b.isEvergreen).slice(0, 1).forEach(b => {
+        const leaf = b.stage === 'decayed' ? '🥀' : '🍂';
+        addCard('decay', leaf, b.title?.slice(0, 32) || 'Forgotten bookmark', `${b.ageDays}d forgotten · ${b.domain || ''}`,
+          'Revive', 'green', () => {
+            chrome.runtime.sendMessage({ type: 'REVIVE_BOOKMARK', id: b.id, url: b.url });
+            setEmotion('excited', `Revived! Fresh leaf sprout for "${(b.title || 'bookmark').slice(0, 18)}" 🌱`);
+            buildPanel();
           });
       });
     });
@@ -805,7 +956,7 @@
     el.innerHTML=`<span class="card-icon">${icon}</span><div class="card-text"><div class="card-title">${title}</div><div class="card-sub">${sub}</div></div><button class="card-btn ${color}">${label}</button>`;
     if(onClick) {
       el.addEventListener('click', (e) => {
-        if (e.target.closest('.session-name-row')) return;
+        if (e.target.closest('.session-name-row') || e.target.closest('.tab-intent-row')) return;
         onClick(e);
       });
       el.querySelector('.card-btn').addEventListener('click', e=>{ e.stopPropagation(); onClick(e); });

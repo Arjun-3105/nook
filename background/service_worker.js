@@ -196,6 +196,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleReviveBookmark(request.id, request.url).then(sendResponse);
     return true;
   }
+  if (request.type === 'TOGGLE_EVERGREEN_BOOKMARK') {
+    handleToggleEvergreenBookmark(request.id).then(sendResponse);
+    return true;
+  }
   if (request.type === 'OPEN_TAB') {
     chrome.tabs.create({ url: request.url });
     sendResponse({ success: true });
@@ -203,6 +207,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request.type === 'GET_ALL_POSITIONS') {
     handleGetAllPositions().then(sendResponse);
+    return true;
+  }
+  if (request.type === 'REMOVE_PAGE_POSITION') {
+    handleRemovePosition(request.url).then(sendResponse);
+    return true;
+  }
+  if (request.type === 'CLEAR_PAGE_POSITIONS') {
+    handleClearPositions().then(sendResponse);
     return true;
   }
   if (request.type === 'GROUP_BY_SITE') {
@@ -229,12 +241,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleRestoreMorningQueue().then(sendResponse);
     return true;
   }
+  if (request.type === 'TOGGLE_FOLD_GROUPS') {
+    handleToggleFoldGroups().then(sendResponse);
+    return true;
+  }
+  if (request.type === 'SET_SPOTLIGHT') {
+    handleSetSpotlight(request.spotlight).then(sendResponse);
+    return true;
+  }
+  if (request.type === 'COMPLETE_SPOTLIGHT') {
+    handleCompleteSpotlight().then(sendResponse);
+    return true;
+  }
+  if (request.type === 'SET_TAB_INTENT') {
+    handleSetTabIntent(request.url, request.title, request.intent).then(sendResponse);
+    return true;
+  }
 });
 
 
 async function handleTabSummary() {
   const tabs = await chrome.tabs.query({ currentWindow: true });
-  const { tabMemory = {}, config = DEFAULT_CONFIG } = await Storage.get(['tabMemory', 'config']);
+  let groupsCount = 0;
+  let allGroupsCollapsed = false;
+  if (chrome.tabGroups) {
+    try {
+      const groups = await chrome.tabGroups.query({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+      groupsCount = groups.length;
+      allGroupsCollapsed = groupsCount > 0 && groups.every(g => g.collapsed);
+    } catch {}
+  }
+  const { tabMemory = {}, config = DEFAULT_CONFIG, activeSpotlight = null, tabIntents = {} } = await Storage.get(['tabMemory', 'config', 'activeSpotlight', 'tabIntents']);
   const thresholdMs = (config.staleThresholdMinutes || 120) * 60 * 1000;
   const now = Date.now();
 
@@ -260,7 +297,11 @@ async function handleTabSummary() {
     activeTabs,
     staleTabs,
     clusters,
-    siteGroups
+    siteGroups,
+    groupsCount,
+    allGroupsCollapsed,
+    activeSpotlight,
+    tabIntents
   };
 }
 
@@ -458,6 +499,21 @@ async function handleGetAllPositions() {
   return Object.values(pagePositions).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
 
+async function handleRemovePosition(url) {
+  if (!url) return { success: false };
+  const { pagePositions = {} } = await Storage.get('pagePositions');
+  if (pagePositions[url]) {
+    delete pagePositions[url];
+    await Storage.set({ pagePositions });
+  }
+  return { success: true };
+}
+
+async function handleClearPositions() {
+  await Storage.set({ pagePositions: {} });
+  return { success: true };
+}
+
 async function handleGetBookmarks() {
   if (!chrome.bookmarks) {
     return { bookmarks: [] };
@@ -484,9 +540,12 @@ async function handleGetBookmarks() {
     const addedAt = b.dateAdded || (now - 1000 * 60 * 60 * 24 * 3); // default 3 days
     const lastOpened = meta.lastOpenedAt || addedAt;
     const ageDays = Math.floor((now - lastOpened) / (1000 * 60 * 60 * 24));
+    const isEvergreen = !!(meta.evergreen || meta.isEvergreen);
     
     let stage = 'fresh';
-    if (ageDays >= 60) stage = 'decayed';
+    if (isEvergreen) {
+      stage = 'evergreen';
+    } else if (ageDays >= 60) stage = 'decayed';
     else if (ageDays >= 30) stage = 'faded';
     else if (ageDays >= 7) stage = 'aging';
 
@@ -496,6 +555,7 @@ async function handleGetBookmarks() {
       url: b.url,
       ageDays,
       stage,
+      isEvergreen,
       snoozedUntil: meta.snoozeUntil || null
     };
   });
@@ -516,6 +576,22 @@ async function handleReviveBookmark(bookmarkId, url) {
     await chrome.tabs.create({ url });
   }
   return { success: true };
+}
+
+async function handleToggleEvergreenBookmark(bookmarkId) {
+  const { bookmarkMetadata = {} } = await Storage.get('bookmarkMetadata');
+  if (bookmarkId) {
+    const current = bookmarkMetadata[bookmarkId] || {};
+    const nextVal = !current.evergreen;
+    bookmarkMetadata[bookmarkId] = {
+      ...current,
+      evergreen: nextVal,
+      lastOpenedAt: Date.now()
+    };
+    await Storage.set({ bookmarkMetadata });
+    return { success: true, isEvergreen: nextVal };
+  }
+  return { success: false };
 }
 
 // ── Focus Session Management ────────────────────────────────────
@@ -559,6 +635,46 @@ async function handleRestoreSession(sessionId) {
     await chrome.tabs.create({ url: tab.url, active: false }).catch(() => {});
   }
   return { success: true, count: session.tabs.length };
+}
+
+async function handleToggleFoldGroups() {
+  if (!chrome.tabGroups) return { success: false, reason: 'tabGroups API not supported' };
+  try {
+    const groups = await chrome.tabGroups.query({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+    if (!groups || groups.length === 0) {
+      return { success: false, reason: 'No tab groups in this window to fold' };
+    }
+    const anyExpanded = groups.some(g => !g.collapsed);
+    const shouldCollapse = anyExpanded;
+    for (const g of groups) {
+      await chrome.tabGroups.update(g.id, { collapsed: shouldCollapse });
+    }
+    return { success: true, count: groups.length, collapsed: shouldCollapse };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function handleSetSpotlight(spotlight) {
+  await Storage.set({ activeSpotlight: spotlight });
+  return { success: true };
+}
+
+async function handleCompleteSpotlight() {
+  await Storage.remove('activeSpotlight');
+  return { success: true };
+}
+
+async function handleSetTabIntent(url, title, intent) {
+  if (!url) return { success: false, reason: 'No URL provided' };
+  const { tabIntents = {} } = await Storage.get('tabIntents');
+  if (intent && intent.trim()) {
+    tabIntents[url] = { url, title: title || url, intent: intent.trim(), timestamp: Date.now() };
+  } else {
+    delete tabIntents[url];
+  }
+  await Storage.set({ tabIntents });
+  return { success: true };
 }
 
 

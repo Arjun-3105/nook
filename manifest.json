@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Nook — Your browser remembers",
   "version": "1.0.0",
-  "description": "A local-first browser companion. Remembers tabs, reading position, and decaying bookmarks.",
+  "description": "A local-first browser companion that quietly remembers unfinished tabs, reading points, and decaying bookmarks.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -13,6 +13,7 @@
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
@@ -42,3 +43,4 @@
     "<all_urls>"
   ]
 }
+
