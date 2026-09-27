@@ -55,27 +55,90 @@ Nook is a local-first, cozy browser companion for people who accumulate tabs, bo
 
 ---
 
-## 🚀 How to Install & Run
+## 🚀 Installation Guide
 
-### Method 1: Load as Chrome Extension
-1. Open Chrome (or Brave / Edge) and navigate to `chrome://extensions`.
-2. Enable **Developer mode** (toggle in the top-right corner).
-3. Click **Load unpacked**.
-4. Select this directory: `/home/arjun-chaudhary/Desktop/nook`.
-5. Open a new tab to experience your new cozy Terrarium!
+Nook runs on any Chromium-based browser (**Google Chrome**, **Brave**, **Arc**, **Microsoft Edge**, **Opera**, or **Vivaldi**). Follow these quick steps to install and start using Nook:
 
-### Method 2: Instant Interactive Showcase (No Extension Required)
-You can test and demo every single screen directly in your browser:
-- Open [`showcase.html`](file:///home/arjun-chaudhary/Desktop/nook/showcase.html) or run:
+### Step 1: Clone or Download the Repository
+
+Clone the repository using `git`:
+```bash
+git clone https://github.com/Arjun-3105/nook.git
+```
+*Or download the ZIP archive from GitHub and extract it to a folder on your computer.*
+
+---
+
+### Step 2: Open Extensions in Your Browser
+
+In your browser's URL address bar, enter the corresponding URL:
+- **Google Chrome**: `chrome://extensions`
+- **Brave Browser**: `brave://extensions`
+- **Microsoft Edge**: `edge://extensions`
+- **Arc**: Open `Settings` → `Extensions` or go to `chrome://extensions`
+
+---
+
+### Step 3: Enable Developer Mode
+
+Locate the **Developer mode** toggle switch in the top-right corner of the Extensions page and turn it **ON**.
+
+---
+
+### Step 4: Load Unpacked Extension
+
+1. Click the **Load unpacked** button in the top-left toolbar.
+2. Select the `nook` folder that you cloned or extracted (the folder containing `manifest.json`).
+3. **Nook** will instantly appear in your extensions list! 🌱
+
+---
+
+### Step 5: Pin Nook for 1-Click Access
+
+1. Click the puzzle piece icon (**Extensions menu**) in your browser's top toolbar.
+2. Find **Nook** and click the **Pin 📌** icon next to it.
+3. The cozy Nook sprout icon will now remain visible on your toolbar for instant access.
+
+---
+
+### Step 6: Quick Start Tips
+
+- **Open the Companion Popup**: Click the Nook icon in the toolbar (or press `Alt + Shift + N` / browser shortcut).
+- **Universal Search**: Type `/` anywhere inside the popup to jump immediately into instant search.
+- **Bento To-Do Board**: Navigate to the **🍱 To-Do** tab to plan your day, write micro-intent notes, or attach current tabs as tasks.
+- **Summon Creature On-Page**: Click **"Show creature on site"** in the popup to place your floating 3D companion onto any active article or document.
+- **Return Point Jump Back**: When returning to articles, click **Jump Back ↗** to smoothly glide straight to your scroll depth highlighted by an emerald beam.
+
+---
+
+### 🔄 Updating / Reloading the Extension
+
+If you pull new updates or make local code modifications:
+1. Return to `chrome://extensions`.
+2. Find **Nook**.
+3. Click the circular **Reload ↻** button on the Nook card to apply changes immediately.
+
+---
+
+## 🎮 Instant Interactive Showcase (No Extension Required)
+
+You can also explore and demo all screens and flows in a standalone interactive sandbox:
+1. Open [`showcase.html`](showcase.html) in your browser, or start a local server:
 ```bash
 python3 -m http.server 8080
 ```
-Then visit `http://localhost:8080/showcase.html`.
+2. Visit `http://localhost:8080/showcase.html`.
 
 ---
 
 ## 🔒 Privacy & Local-First Architecture
-- **100% On-Device**: All tab states, reading marks, and bookmarks stay locally in `chrome.storage.local`.
-- **No Cloud Database / No Tracking**: No external analytics or accounts required.
-- **Sensitive Domain Exclusions**: Built-in blocklist for banking, logins, and private apps.
 
+- **100% On-Device**: All tab data, reading memory, and bookmarks remain entirely within `chrome.storage.local`.
+- **Zero Cloud Telemetry**: No tracking, no cookies, no third-party servers, and no external analytics.
+- **Sensitive Domain Exclusions**: Automatic safety blocklist excludes banking, login providers, government portals, and payment gateways.
+
+---
+
+## 📄 License
+
+MIT License. Free and open source for all curious minds.
