@@ -246,7 +246,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   if (request.type === 'SET_SPOTLIGHT') {
-    handleSetSpotlight(request.spotlight).then(sendResponse);
+    handleSetSpotlight(request.spotlight, sender).then(sendResponse);
     return true;
   }
   if (request.type === 'COMPLETE_SPOTLIGHT') {
@@ -254,7 +254,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   if (request.type === 'SET_TAB_INTENT') {
-    handleSetTabIntent(request.url, request.title, request.intent).then(sendResponse);
+    handleSetTabIntent(request.url, request.title, request.intent, request.tabId || sender?.tab?.id).then(sendResponse);
+    return true;
+  }
+  if (request.type === 'GET_TASKS') {
+    Storage.get('tasks').then(({ tasks = [] }) => sendResponse({ tasks }));
+    return true;
+  }
+  if (request.type === 'SAVE_TASKS') {
+    Storage.set({ tasks: request.tasks || [] }).then(() => sendResponse({ success: true }));
     return true;
   }
 });
@@ -264,11 +272,15 @@ async function handleTabSummary() {
   const tabs = await chrome.tabs.query({ currentWindow: true });
   let groupsCount = 0;
   let allGroupsCollapsed = false;
+  const groupMap = {};
   if (chrome.tabGroups) {
     try {
       const groups = await chrome.tabGroups.query({ windowId: chrome.windows.WINDOW_ID_CURRENT });
       groupsCount = groups.length;
       allGroupsCollapsed = groupsCount > 0 && groups.every(g => g.collapsed);
+      for (const g of groups) {
+        groupMap[g.id] = { id: g.id, title: g.title, color: g.color, collapsed: g.collapsed };
+      }
     } catch {}
   }
   const { tabMemory = {}, config = DEFAULT_CONFIG, activeSpotlight = null, tabIntents = {} } = await Storage.get(['tabMemory', 'config', 'activeSpotlight', 'tabIntents']);
@@ -282,10 +294,19 @@ async function handleTabSummary() {
     if (!t.url || t.url.startsWith('chrome://')) continue;
     const mem = tabMemory[t.id] || { id: t.id, url: t.url, title: t.title, createdAt: now, lastActiveAt: now };
     const age = now - (mem.lastActiveAt || mem.createdAt);
+
+    const groupInfo = (t.groupId && t.groupId > 0) ? groupMap[t.groupId] : null;
+    const intentInfo = tabIntents[t.url]?.intent || null;
+    const enrichedTab = {
+      ...t,
+      group: groupInfo,
+      intent: intentInfo
+    };
+
     if (age > thresholdMs) {
-      staleTabs.push({ ...t, inactiveDuration: age });
+      staleTabs.push({ ...enrichedTab, inactiveDuration: age });
     } else {
-      activeTabs.push(t);
+      activeTabs.push(enrichedTab);
     }
   }
 
@@ -655,24 +676,143 @@ async function handleToggleFoldGroups() {
   }
 }
 
-async function handleSetSpotlight(spotlight) {
-  await Storage.set({ activeSpotlight: spotlight });
-  return { success: true };
+async function handleSetSpotlight(spotlight, sender = null) {
+  if (!spotlight) return { success: false };
+  let targetTab = null;
+
+  try {
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+    if (spotlight.tabId) {
+      targetTab = tabs.find(t => t.id === spotlight.tabId);
+    }
+    if (!targetTab && sender?.tab?.id) {
+      targetTab = tabs.find(t => t.id === sender.tab.id);
+    }
+    if (!targetTab && spotlight.activeTabUrl) {
+      targetTab = tabs.find(t => t.url === spotlight.activeTabUrl);
+    }
+    if (!targetTab && tabs.length > 0) {
+      targetTab = tabs.find(t => t.active) || tabs[0];
+    }
+  } catch (e) {
+    console.warn('Error finding target tab for spotlight:', e);
+  }
+
+  let groupId = null;
+  if (targetTab) {
+    try {
+      // 1. Activate target tab
+      await chrome.tabs.update(targetTab.id, { active: true });
+
+      // 2. Tag with native Chrome tab group "🎯 Focus"
+      if (chrome.tabGroups) {
+        if (targetTab.groupId > 0) {
+          groupId = targetTab.groupId;
+        } else {
+          groupId = await chrome.tabs.group({ tabIds: [targetTab.id] });
+        }
+        const cleanGoal = (spotlight.goal || spotlight.title || 'Focus').trim();
+        const tagTitle = cleanGoal.length > 18 ? cleanGoal.slice(0, 16) + '…' : cleanGoal;
+        await chrome.tabGroups.update(groupId, {
+          title: `🎯 ${tagTitle}`,
+          color: 'green',
+          collapsed: false
+        });
+
+        // 3. Fold/collapse other tab groups so distraction is minimized
+        const allGroups = await chrome.tabGroups.query({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+        for (const g of allGroups) {
+          if (g.id !== groupId) {
+            await chrome.tabGroups.update(g.id, { collapsed: true }).catch(() => {});
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error applying Chrome tab group spotlight:', e);
+    }
+  }
+
+  const spotlightData = {
+    ...spotlight,
+    tabId: targetTab?.id || spotlight.tabId || null,
+    groupId: groupId,
+    activeTabUrl: targetTab?.url || spotlight.activeTabUrl,
+    title: spotlight.title || targetTab?.title || 'Focus Session',
+    goal: spotlight.goal || spotlight.title || targetTab?.title || 'Focus Session',
+    timestamp: Date.now()
+  };
+
+  await Storage.set({ activeSpotlight: spotlightData });
+  return { success: true, spotlight: spotlightData };
 }
 
 async function handleCompleteSpotlight() {
+  const { activeSpotlight } = await Storage.get('activeSpotlight');
+  if (activeSpotlight && chrome.tabGroups) {
+    try {
+      if (activeSpotlight.tabId) {
+        await chrome.tabs.ungroup(activeSpotlight.tabId).catch(() => {});
+      }
+    } catch {}
+    // Unfold other tab groups
+    try {
+      const groups = await chrome.tabGroups.query({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+      for (const g of groups) {
+        await chrome.tabGroups.update(g.id, { collapsed: false }).catch(() => {});
+      }
+    } catch {}
+  }
   await Storage.remove('activeSpotlight');
   return { success: true };
 }
 
-async function handleSetTabIntent(url, title, intent) {
+async function handleSetTabIntent(url, title, intent, explicitTabId = null) {
   if (!url) return { success: false, reason: 'No URL provided' };
   const { tabIntents = {} } = await Storage.get('tabIntents');
-  if (intent && intent.trim()) {
-    tabIntents[url] = { url, title: title || url, intent: intent.trim(), timestamp: Date.now() };
+  const cleanIntent = (intent || '').trim();
+
+  let targetTab = null;
+  try {
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+    if (explicitTabId) {
+      targetTab = tabs.find(t => t.id === explicitTabId);
+    }
+    if (!targetTab) {
+      targetTab = tabs.find(t => t.url === url);
+    }
+  } catch {}
+
+  if (cleanIntent) {
+    tabIntents[url] = { url, title: title || targetTab?.title || url, intent: cleanIntent, timestamp: Date.now() };
+
+    // Tag the tab directly in Chrome with a visible Chrome tab group!
+    if (targetTab && chrome.tabGroups) {
+      try {
+        let groupId = targetTab.groupId;
+        if (!groupId || groupId <= 0) {
+          groupId = await chrome.tabs.group({ tabIds: [targetTab.id] });
+        }
+        const tagTitle = cleanIntent.length > 18 ? cleanIntent.slice(0, 16) + '…' : cleanIntent;
+        await chrome.tabGroups.update(groupId, {
+          title: tagTitle,
+          color: 'blue',
+          collapsed: false
+        });
+      } catch (e) {
+        console.warn('Could not set Chrome tab group for intent:', e);
+      }
+    }
   } else {
     delete tabIntents[url];
+
+    // If clearing intent, ungroup the tab if it was grouped
+    if (targetTab && targetTab.groupId > 0 && chrome.tabGroups) {
+      try {
+        await chrome.tabs.ungroup(targetTab.id);
+      } catch {}
+    }
   }
+
   await Storage.set({ tabIntents });
   return { success: true };
 }

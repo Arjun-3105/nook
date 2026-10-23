@@ -73,7 +73,7 @@
     <!-- Navigation Pills -->
     <div class="nav-pills">
       <button class="nav-pill active" data-tab="overview">🌱 Action</button>
-      <button class="nav-pill" data-tab="intents">🍱 To-Do</button>
+      <button class="nav-pill" data-tab="intents">🎯 Focus & Tags</button>
       <button class="nav-pill" data-tab="sessions">🗂️ Sessions</button>
       <button class="nav-pill" data-tab="bookmarks">🍂 Bookmarks</button>
       <button class="nav-pill" data-tab="reading">📖 Reading</button>
@@ -124,65 +124,62 @@
         </div>
       </div>
 
-      <!-- 2. BENTO TO-DO & FOCUS TAB -->
+      <!-- 2. FOCUS & TAGS TAB -->
       <div class="tab-panel" id="panelIntents">
-        <div class="bento-container">
-          <!-- Bento Header -->
+        <!-- Spotlight Focus Section (Active or 1-Click Trigger) -->
+        <div id="activeSpotlightContainer">
+          <!-- Populated by JS: Active Focus Card or Quick Focus Card -->
+        </div>
+
+        <!-- Tag Current Tab Card -->
+        <div class="intent-creator-box">
+          <div class="intent-creator-title">
+            <span>🏷️ Tag Current Tab</span>
+            <span class="intent-hint">Applies tag in Chrome</span>
+          </div>
+          <div class="intent-active-tab-title" id="currentTabLabel">Tab: Loading…</div>
+          <div class="intent-input-row">
+            <input type="text" class="intent-input" id="inputTabIntent" placeholder="Add tag or why you opened this…" maxlength="40" />
+            <button class="bento-add-btn" id="btnSaveIntent" style="border-radius:8px; padding:5px 10px; font-size:11px; white-space:nowrap;">Tag Tab</button>
+          </div>
+          <!-- Quick Preset Tag Chips -->
+          <div class="tag-chips-row">
+            <button class="tag-chip" data-tag="🎯 Focus">🎯 Focus</button>
+            <button class="tag-chip" data-tag="🛠️ Work">🛠️ Work</button>
+            <button class="tag-chip" data-tag="📚 Research">📚 Research</button>
+            <button class="tag-chip" data-tag="📝 Notes">📝 Notes</button>
+            <button class="tag-chip" data-tag="📖 Read Later">📖 Read Later</button>
+          </div>
+          <div id="currentTabTagStatus" class="current-tag-status" style="display:none;"></div>
+        </div>
+
+        <!-- Open Tabs with Tags List -->
+        <div class="tabs-tag-section">
+          <div class="panel-section-head">
+            <span class="panel-section-title">Open Tabs & Tags</span>
+            <span class="sub-counter" id="intentsCounter">0 tabs</span>
+          </div>
+          <div class="item-list" id="intentsList">
+            <div class="empty-state">Loading tabs...</div>
+          </div>
+        </div>
+
+        <!-- Quick Tasks Section -->
+        <div class="bento-container" style="margin-top:6px;">
           <div class="bento-header">
-            <div class="bento-title">🍱 Bento Focus & To-Do Board</div>
+            <div class="bento-title">📋 Quick Tasks</div>
             <div class="bento-badge" id="bentoProgressBadge">0/0 completed</div>
           </div>
-
-          <!-- Quick Add Task Card -->
           <div class="bento-input-card">
             <div class="bento-input-row">
-              <input type="text" class="bento-text-input" id="inputBentoTask" placeholder="Add a new task or mission…" maxlength="120" />
-              <select class="bento-tier-select" id="selectBentoTier" title="Choose task box size">
-                <option value="large">🍱 Big Focus (1 Max)</option>
-                <option value="medium" selected>🥗 Medium Task</option>
-                <option value="small">🥢 Quick Tab Micro</option>
-              </select>
-              <button class="bento-add-btn" id="btnAddBentoTask">+ Add</button>
+              <input type="text" class="bento-text-input" id="inputQuickTask" placeholder="Add a quick task or note…" maxlength="120" />
+              <button class="bento-add-btn" id="btnAddQuickTask">+ Add</button>
             </div>
-            <!-- Quick attach active tab intent button -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
-              <span style="font-size:10px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px;" id="currentTabLabel">Tab: Loading…</span>
-              <button class="btn-xs" id="btnAttachTabAsTask" style="font-size:9.5px; padding:2px 6px;">+ Attach Tab as Micro-Task</button>
+            <div style="display:flex; justify-content:flex-end; margin-top:2px;">
+              <button class="btn-xs" id="btnAttachTabAsTask" style="font-size:9.5px; padding:2px 7px;">+ Add Current Tab as Task</button>
             </div>
           </div>
-
-          <!-- Compartment 1: Large Box (1 Big Priority / Deep Work / Spotlight Focus) -->
-          <div class="bento-box large" id="bentoLargeBox">
-            <div class="bento-box-head">
-              <span class="bento-box-label green">🍱 1 Priority Focus (Spotlight Goal)</span>
-              <span class="sub-counter" id="bentoLargeCounter">Deep Work</span>
-            </div>
-            <div class="bento-task-list" id="bentoLargeList">
-              <!-- Dynamically populated or empty prompt -->
-            </div>
-          </div>
-
-          <!-- Compartment 2: Medium Box (2-3 Supporting Focus Tasks) -->
-          <div class="bento-box medium" id="bentoMediumBox">
-            <div class="bento-box-head">
-              <span class="bento-box-label blue">🥗 Supporting Tasks (Maintenance & Work)</span>
-              <span class="sub-counter" id="bentoMediumCounter">0 tasks</span>
-            </div>
-            <div class="bento-task-list" id="bentoMediumList">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
-
-          <!-- Compartment 3: Small Box (Micro-Tasks & Tab Intent Notes) -->
-          <div class="bento-box small" id="bentoSmallBox">
-            <div class="bento-box-head">
-              <span class="bento-box-label gray">🥢 Micro-Tasks & Open Tab Intents</span>
-              <span class="sub-counter" id="bentoSmallCounter">0 items</span>
-            </div>
-            <div class="bento-task-list" id="bentoSmallList">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
+          <div class="bento-task-list" id="quickTasksList"></div>
         </div>
       </div>
 

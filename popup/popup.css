@@ -603,6 +603,165 @@ input:checked + .knob::before { transform: translateX(14px); }
   background: #bae6fd;
 }
 
+/* ─── Quick Focus Card (Inactive Spotlight State) ─── */
+.quick-focus-card {
+  background: #ffffff;
+  border: 1px dashed #86efac;
+  border-radius: 12px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.quick-focus-info {
+  flex: 1;
+  min-width: 0;
+}
+.quick-focus-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.quick-focus-desc {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 1px;
+}
+.btn-quick-focus {
+  background: #15803d;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.2);
+}
+.btn-quick-focus:hover {
+  background: #166534;
+  transform: translateY(-1px);
+}
+
+/* ─── Tag Chips & Tagging UI ─── */
+.tag-chips-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+.tag-chip {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.tag-chip:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+.current-tag-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10.5px;
+  color: #15803d;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.btn-remove-tag {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.btn-remove-tag:hover {
+  background: #fee2e2;
+}
+
+/* ─── Tag Badge for Tabs ─── */
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.tag-badge.blue {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+.tag-badge.green {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.tag-badge.purple {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+.tag-badge.yellow {
+  background: #fef9c3;
+  color: #a16207;
+  border: 1px solid #fef08a;
+}
+.tag-badge.red {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+.tag-badge.orange {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+.tag-badge.grey {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-jump-tab {
+  background: #ffffff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-jump-tab:hover {
+  background: #f0f9ff;
+}
+
 /* ═════════════════════════════════════════════════════════════════
    1. INSTANT SEARCH BAR & RESULTS
    ═════════════════════════════════════════════════════════════════ */

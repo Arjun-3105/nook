@@ -41,12 +41,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const activeSpotlightContainer = document.getElementById('activeSpotlightContainer');
   const intentsCounter      = document.getElementById('intentsCounter');
   const intentsList         = document.getElementById('intentsList');
+  const currentTabTagStatus = document.getElementById('currentTabTagStatus');
+  const inputQuickTask      = document.getElementById('inputQuickTask');
+  const btnAddQuickTask     = document.getElementById('btnAddQuickTask');
+  const btnAttachTabAsTask  = document.getElementById('btnAttachTabAsTask');
+  const quickTasksList      = document.getElementById('quickTasksList');
+  const bentoProgressBadge  = document.getElementById('bentoProgressBadge');
+  const globalSearchInput   = document.getElementById('globalSearchInput');
+  const btnSearchClear      = document.getElementById('btnSearchClear');
+  const panelSearch         = document.getElementById('panelSearch');
+  const searchResultsList   = document.getElementById('searchResultsList');
+  const searchCountBadge    = document.getElementById('searchCountBadge');
 
   let currentTabSummary = null;
   let currentBookmarks  = [];
   let currentSessions   = [];
   let currentReading    = [];
   let currentMorningQueue = [];
+  let currentTasks      = [];
   let currentBookmarkFilter = 'all';
   let activeWindowTab   = null;
 
@@ -181,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             inputTabIntent.value = currentTabSummary.tabIntents[tabs[0].url].intent || '';
           }
         }
+        renderIntentsTab();
       }
     });
 
@@ -215,6 +228,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res) return;
       currentMorningQueue = res.morningQueue || [];
       renderOverview();
+    });
+
+    // 6. Quick Tasks
+    chrome.runtime.sendMessage({ type: 'GET_TASKS' }, (res) => {
+      currentTasks = res?.tasks || [];
+      renderTasks();
     });
   }
 
@@ -527,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── Render: Intents & Spotlight Tab ─────────────────────────────
+  // ── Render 2: Focus & Tags Tab ──────────────────────────────────
   function renderIntentsTab() {
     if (!intentsList || !activeSpotlightContainer) return;
     const intents = currentTabSummary?.tabIntents || {};
@@ -548,10 +567,28 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="spotlight-icon">🎯</span>
         <div class="spotlight-info">
           <div class="spotlight-goal">${spotlight.goal || spotlight.title}</div>
-          <div class="spotlight-sub">${hostname ? hostname + ' · ' : ''}Spotlight Focus Mode</div>
+          <div class="spotlight-sub">${hostname ? hostname + ' · ' : ''}Spotlight Focus Mode (Distractions Folded)</div>
         </div>
-        <button class="btn-spotlight-done" id="btnCompleteSpotlight" title="Mark spotlight goal as completed">✓ Done</button>
+        <div style="display:flex; gap:5px; flex-shrink:0;">
+          <button class="btn-jump-tab" id="btnJumpSpotlight" title="Switch to this tab">Jump ↗</button>
+          <button class="btn-spotlight-done" id="btnCompleteSpotlight" title="Mark spotlight goal as completed">✓ Done</button>
+        </div>
       `;
+      card.querySelector('#btnJumpSpotlight')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (spotlight.tabId) {
+          chrome.tabs.update(spotlight.tabId, { active: true });
+          window.close();
+        } else if (spotlight.activeTabUrl) {
+          chrome.tabs.query({ currentWindow: true }, tabs => {
+            const found = tabs.find(t => t.url === spotlight.activeTabUrl);
+            if (found) {
+              chrome.tabs.update(found.id, { active: true });
+              window.close();
+            }
+          });
+        }
+      });
       card.querySelector('#btnCompleteSpotlight')?.addEventListener('click', (e) => {
         e.stopPropagation();
         chrome.runtime.sendMessage({ type: 'COMPLETE_SPOTLIGHT' }, () => {
@@ -566,24 +603,65 @@ document.addEventListener('DOMContentLoaded', () => {
         spotlightStatusTag.textContent = 'None active';
         spotlightStatusTag.style.color = '#94a3b8';
       }
-      const emptyCard = document.createElement('div');
-      emptyCard.className = 'empty-state';
-      emptyCard.style.padding = '12px 6px';
-      emptyCard.textContent = 'No active Spotlight. Click "🎯 Spotlight" on any tab below to focus without closing tabs!';
-      activeSpotlightContainer.appendChild(emptyCard);
+      const card = document.createElement('div');
+      card.className = 'quick-focus-card';
+      const curTitle = activeWindowTab?.title || 'current tab';
+      const cleanTitle = curTitle.length > 28 ? curTitle.slice(0, 26) + '…' : curTitle;
+      card.innerHTML = `
+        <div class="quick-focus-info">
+          <div class="quick-focus-title">🎯 Spotlight Focus</div>
+          <div class="quick-focus-desc">Lock into “${cleanTitle}” and quiet background tabs</div>
+        </div>
+        <button class="btn-quick-focus" id="btnQuickFocusCurrent">🎯 Focus Tab</button>
+      `;
+      card.querySelector('#btnQuickFocusCurrent')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeWindowTab) {
+          showToast('No active tab to focus');
+          return;
+        }
+        const goal = (intents[activeWindowTab.url]?.intent) || activeWindowTab.title || 'Focus';
+        chrome.runtime.sendMessage({
+          type: 'SET_SPOTLIGHT',
+          spotlight: {
+            title: goal,
+            goal: goal,
+            activeTabUrl: activeWindowTab.url,
+            tabId: activeWindowTab.id
+          }
+        }, () => {
+          showToast(`Spotlight focused on "${goal.slice(0, 18)}" 🎯`);
+          setCreatureEmotion('excited', 'Focus Spotlight locked!', 'Distracting tabs folded into background.');
+          refreshAll();
+        });
+      });
+      activeSpotlightContainer.appendChild(card);
     }
 
-    // 2. Render Open Tabs Intents List
+    // 2. Render Active Tab Tag Info
+    if (currentTabLabel) {
+      currentTabLabel.textContent = activeWindowTab ? `Current: ${activeWindowTab.title || activeWindowTab.url}` : 'Tab: None active';
+      if (activeWindowTab?.url) currentTabLabel.title = activeWindowTab.url;
+    }
+    if (currentTabTagStatus) {
+      const activeEnriched = currentTabSummary?.activeTabs?.find(t => t.id === activeWindowTab?.id);
+      const existingTag = activeEnriched?.group?.title || intents[activeWindowTab?.url]?.intent;
+      if (existingTag) {
+        currentTabTagStatus.style.display = 'flex';
+        currentTabTagStatus.innerHTML = `
+          <span>🏷️ Tag on tab: <strong class="tag-badge ${activeEnriched?.group?.color || 'blue'}">${existingTag}</strong></span>
+          <button class="btn-remove-tag" id="btnRemoveCurrentTag" title="Remove tag and ungroup tab in Chrome">✕ Remove</button>
+        `;
+        currentTabTagStatus.querySelector('#btnRemoveCurrentTag')?.addEventListener('click', () => {
+          saveTabTag('');
+        });
+      } else {
+        currentTabTagStatus.style.display = 'none';
+      }
+    }
+
+    // 3. Render Open Tabs with Tags List
     intentsList.innerHTML = '';
-    const intentKeys = Object.keys(intents);
-    if (intentsCounter) intentsCounter.textContent = `${intentKeys.length} notes`;
-
-    if (!allTabs.length) {
-      intentsList.innerHTML = '<div class="empty-state">No open tabs found in window.</div>';
-      return;
-    }
-
-    // Deduplicate tabs by ID
     const uniqueTabs = [];
     const seenIds = new Set();
     for (const t of allTabs) {
@@ -593,94 +671,324 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Sort tabs: tabs with intent first, then rest
-    uniqueTabs.sort((a, b) => {
-      const aHas = !!(intents[a.url]?.intent);
-      const bHas = !!(intents[b.url]?.intent);
-      if (aHas !== bHas) return aHas ? -1 : 1;
-      return 0;
+    let taggedCount = 0;
+    uniqueTabs.forEach(t => {
+      if (t.group?.title || intents[t.url]?.intent) taggedCount++;
     });
+    if (intentsCounter) intentsCounter.textContent = `${taggedCount} tagged · ${uniqueTabs.length} tabs`;
 
-    uniqueTabs.slice(0, 30).forEach(tab => {
-      const intentObj = intents[tab.url];
-      const hasIntent = !!(intentObj && intentObj.intent);
-      const isSpotlightTab = spotlight && spotlight.activeTabUrl === tab.url;
-      const star = isSpotlightTab ? '🎯' : (hasIntent ? '📝' : '🌐');
-      const domain = tab.url ? (() => { try { return new URL(tab.url).hostname; } catch { return ''; } })() : '';
+    if (!uniqueTabs.length) {
+      intentsList.innerHTML = '<div class="empty-state">No open tabs found in window.</div>';
+    } else {
+      // Sort: spotlight tab, then tagged tabs, then rest
+      uniqueTabs.sort((a, b) => {
+        const aSpot = spotlight && (spotlight.tabId === a.id || spotlight.activeTabUrl === a.url);
+        const bSpot = spotlight && (spotlight.tabId === b.id || spotlight.activeTabUrl === b.url);
+        if (aSpot !== bSpot) return aSpot ? -1 : 1;
+        const aHas = !!(a.group?.title || intents[a.url]?.intent);
+        const bHas = !!(b.group?.title || intents[b.url]?.intent);
+        if (aHas !== bHas) return aHas ? -1 : 1;
+        return 0;
+      });
 
-      const row = document.createElement('div');
-      row.className = 'list-item';
-      row.innerHTML = `
-        <span class="list-item-icon">${star}</span>
-        <div class="list-item-body">
-          <div class="list-item-title">${tab.title || 'Tab'}</div>
-          <div class="list-item-meta" style="${hasIntent ? 'color:#15803d;font-weight:600;' : ''}">
-            ${hasIntent ? `“${intentObj.intent}”` : domain}
+      uniqueTabs.slice(0, 30).forEach(tab => {
+        const tag = tab.group?.title || intents[tab.url]?.intent;
+        const isSpotlightTab = spotlight && (spotlight.tabId === tab.id || spotlight.activeTabUrl === tab.url);
+        const star = isSpotlightTab ? '🎯' : (tag ? '🏷️' : '🌐');
+        const domain = tab.url ? (() => { try { return new URL(tab.url).hostname; } catch { return ''; } })() : '';
+        const tagBadgeHtml = tag ? `<span class="tag-badge ${tab.group?.color || 'blue'}">${tag}</span>` : '';
+
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.innerHTML = `
+          <span class="list-item-icon">${star}</span>
+          <div class="list-item-body">
+            <div class="list-item-title">${tab.title || 'Tab'} ${tagBadgeHtml}</div>
+            <div class="list-item-meta">${domain}</div>
           </div>
-        </div>
-        <div style="display:flex; gap:4px; flex-shrink:0;">
-          <button class="card-action spotlight-btn btn-make-spotlight" title="Make this tab your primary Spotlight focus">
-            ${isSpotlightTab ? 'Active' : '🎯 Spotlight'}
-          </button>
-        </div>
-      `;
+          <div style="display:flex; gap:4px; flex-shrink:0;">
+            <button class="card-action spotlight-btn btn-make-spotlight" title="Lock in and focus this tab">
+              ${isSpotlightTab ? 'Active' : '🎯 Focus'}
+            </button>
+          </div>
+        `;
 
-      row.querySelector('.btn-make-spotlight')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const goal = (intentObj && intentObj.intent) ? intentObj.intent : (tab.title || 'Focus Task');
-        chrome.runtime.sendMessage({
-          type: 'SET_SPOTLIGHT',
-          spotlight: {
-            title: goal,
-            goal: goal,
-            activeTabUrl: tab.url,
-            tabUrls: [tab.url]
-          }
-        }, () => {
-          showToast(`Spotlight set: "${goal.slice(0, 18)}" 🎯`);
-          setCreatureEmotion('excited', 'Focus Spotlight set!', `Target: "${goal.slice(0, 24)}"`);
-          refreshAll();
+        row.querySelector('.btn-make-spotlight')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const goal = tag || tab.title || 'Focus Task';
+          chrome.runtime.sendMessage({
+            type: 'SET_SPOTLIGHT',
+            spotlight: {
+              title: goal,
+              goal: goal,
+              activeTabUrl: tab.url,
+              tabId: tab.id
+            }
+          }, () => {
+            showToast(`Spotlight focused: "${goal.slice(0, 18)}" 🎯`);
+            setCreatureEmotion('excited', 'Focus Spotlight set!', `Target: "${goal.slice(0, 22)}"`);
+            refreshAll();
+          });
         });
-      });
 
-      row.addEventListener('click', () => {
-        chrome.tabs.update(tab.id, { active: true });
-        window.close();
-      });
+        row.addEventListener('click', () => {
+          chrome.tabs.update(tab.id, { active: true });
+          window.close();
+        });
 
-      intentsList.appendChild(row);
-    });
+        intentsList.appendChild(row);
+      });
+    }
+
+    renderTasks();
   }
 
-  // Save current tab intent helper
-  function saveCurrentTabIntent() {
+  // ── Tab Tagging Helper ───────────────────────────────────────────
+  function saveTabTag(tagText) {
     if (!activeWindowTab || !activeWindowTab.url) {
-      showToast('No active tab to set intent for');
+      showToast('No active tab to set tag for');
       return;
     }
-    const intentText = (inputTabIntent?.value || '').trim();
+    const cleanTag = (tagText !== undefined ? tagText : (inputTabIntent?.value || '')).trim();
     chrome.runtime.sendMessage({
       type: 'SET_TAB_INTENT',
       url: activeWindowTab.url,
       title: activeWindowTab.title,
-      intent: intentText
+      tabId: activeWindowTab.id,
+      intent: cleanTag
     }, (res) => {
       if (res?.success) {
-        if (intentText) {
-          showToast(`Saved intent: "${intentText.slice(0, 20)}" 🎯`);
-          setCreatureEmotion('excited', 'Tab intent recorded!', 'I will remember why you opened this 🌱');
+        if (cleanTag) {
+          showToast(`Tagged tab: "${cleanTag.slice(0, 18)}" 🏷️`);
+          setCreatureEmotion('excited', 'Tab tagged in Chrome!', `"${cleanTag.slice(0, 20)}"`);
         } else {
-          showToast('Cleared tab intent note');
+          showToast('Tag removed from tab');
         }
+        if (inputTabIntent) inputTabIntent.value = '';
         refreshAll();
       }
     });
   }
 
-  btnSaveIntent?.addEventListener('click', saveCurrentTabIntent);
+  btnSaveIntent?.addEventListener('click', () => saveTabTag());
   inputTabIntent?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') saveCurrentTabIntent();
+    if (e.key === 'Enter') saveTabTag();
   });
+
+  document.querySelectorAll('.tag-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      saveTabTag(chip.dataset.tag);
+    });
+  });
+
+  // ── Quick Tasks Management ──────────────────────────────────────
+  function renderTasks() {
+    if (!quickTasksList) return;
+    quickTasksList.innerHTML = '';
+    const total = currentTasks.length;
+    const completed = currentTasks.filter(t => t.done).length;
+    if (bentoProgressBadge) {
+      bentoProgressBadge.textContent = `${completed}/${total} completed`;
+    }
+
+    if (!total) {
+      quickTasksList.innerHTML = '<div class="bento-empty-prompt">No tasks yet. Jot a quick to-do or attach your tab!</div>';
+      return;
+    }
+
+    currentTasks.forEach((task, idx) => {
+      const item = document.createElement('div');
+      item.className = `bento-task-item ${task.done ? 'completed' : ''}`;
+      const tabMetaHtml = task.tabUrl ? `<span class="bento-task-meta" title="Jump to linked tab">🔗 Tab</span>` : '';
+      item.innerHTML = `
+        <input type="checkbox" class="bento-checkbox" ${task.done ? 'checked' : ''} />
+        <span class="bento-task-text">${task.text}</span>
+        ${tabMetaHtml}
+        <button class="bento-task-del" title="Delete task">✕</button>
+      `;
+
+      item.querySelector('.bento-checkbox').addEventListener('change', (e) => {
+        task.done = e.target.checked;
+        saveTasks();
+      });
+
+      if (task.tabUrl) {
+        item.querySelector('.bento-task-meta')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          chrome.tabs.query({ currentWindow: true }, tabs => {
+            const found = tabs.find(t => t.url === task.tabUrl);
+            if (found) {
+              chrome.tabs.update(found.id, { active: true });
+              window.close();
+            } else {
+              chrome.tabs.create({ url: task.tabUrl });
+              window.close();
+            }
+          });
+        });
+      }
+
+      item.querySelector('.bento-task-del').addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentTasks.splice(idx, 1);
+        saveTasks();
+      });
+
+      quickTasksList.appendChild(item);
+    });
+  }
+
+  function saveTasks() {
+    chrome.runtime.sendMessage({ type: 'SAVE_TASKS', tasks: currentTasks }, () => {
+      renderTasks();
+    });
+  }
+
+  function addQuickTask(text, tabUrl = null) {
+    const val = (text || '').trim();
+    if (!val) return;
+    currentTasks.unshift({
+      id: Date.now(),
+      text: val,
+      done: false,
+      tabUrl: tabUrl || null
+    });
+    saveTasks();
+    showToast('Task added! 📋');
+    if (inputQuickTask) inputQuickTask.value = '';
+  }
+
+  btnAddQuickTask?.addEventListener('click', () => {
+    addQuickTask(inputQuickTask?.value);
+  });
+  inputQuickTask?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addQuickTask(inputQuickTask?.value);
+  });
+  btnAttachTabAsTask?.addEventListener('click', () => {
+    if (activeWindowTab) {
+      addQuickTask(activeWindowTab.title || 'Review active tab', activeWindowTab.url);
+    } else {
+      showToast('No active tab to attach');
+    }
+  });
+
+  // ── Universal Search ─────────────────────────────────────────────
+  if (globalSearchInput) {
+    let lastTabBeforeSearch = 'overview';
+
+    globalSearchInput.addEventListener('input', () => {
+      const q = globalSearchInput.value.trim().toLowerCase();
+      if (!q) {
+        if (btnSearchClear) btnSearchClear.style.display = 'none';
+        if (panelSearch) panelSearch.style.display = 'none';
+        switchTab(lastTabBeforeSearch);
+        return;
+      }
+
+      if (btnSearchClear) btnSearchClear.style.display = 'block';
+      const activeNav = document.querySelector('.nav-pill.active');
+      if (activeNav && activeNav.dataset.tab !== 'search') {
+        lastTabBeforeSearch = activeNav.dataset.tab;
+      }
+
+      Object.values(panels).forEach(p => p?.classList.remove('active'));
+      if (panelSearch) panelSearch.style.display = 'block';
+      navPills.forEach(p => p.classList.remove('active'));
+
+      renderSearchResults(q);
+    });
+
+    btnSearchClear?.addEventListener('click', () => {
+      globalSearchInput.value = '';
+      btnSearchClear.style.display = 'none';
+      if (panelSearch) panelSearch.style.display = 'none';
+      switchTab(lastTabBeforeSearch);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== globalSearchInput && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        globalSearchInput.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === globalSearchInput) {
+        globalSearchInput.value = '';
+        if (btnSearchClear) btnSearchClear.style.display = 'none';
+        if (panelSearch) panelSearch.style.display = 'none';
+        switchTab(lastTabBeforeSearch);
+      }
+    });
+  }
+
+  function renderSearchResults(q) {
+    if (!searchResultsList) return;
+    searchResultsList.innerHTML = '';
+    const results = [];
+
+    // 1. Open tabs
+    const allTabs = [...(currentTabSummary?.activeTabs || []), ...(currentTabSummary?.staleTabs || [])];
+    allTabs.forEach(t => {
+      if ((t.title && t.title.toLowerCase().includes(q)) || (t.url && t.url.toLowerCase().includes(q))) {
+        results.push({ type: 'tab', icon: '🌐', title: t.title || t.url, sub: 'Open tab', tabId: t.id });
+      }
+    });
+
+    // 2. Reading points
+    (currentReading || []).forEach(r => {
+      if ((r.title && r.title.toLowerCase().includes(q)) || (r.url && r.url.toLowerCase().includes(q))) {
+        results.push({ type: 'reading', icon: '📖', title: r.title || r.url, sub: `Reading Point (${r.percentage || 0}%)`, item: r });
+      }
+    });
+
+    // 3. Bookmarks
+    (currentBookmarks || []).forEach(b => {
+      if ((b.title && b.title.toLowerCase().includes(q)) || (b.url && b.url.toLowerCase().includes(q))) {
+        results.push({ type: 'bookmark', icon: '🍂', title: b.title, sub: `Bookmark · ${b.stage}`, url: b.url });
+      }
+    });
+
+    // 4. Tasks
+    (currentTasks || []).forEach(task => {
+      if (task.text && task.text.toLowerCase().includes(q)) {
+        results.push({ type: 'task', icon: '📋', title: task.text, sub: task.done ? 'Task (Completed)' : 'Task (Pending)' });
+      }
+    });
+
+    if (searchCountBadge) searchCountBadge.textContent = `${results.length} matches`;
+
+    if (!results.length) {
+      searchResultsList.innerHTML = '<div class="empty-state">No matching tabs, bookmarks, reading points, or tasks found.</div>';
+      return;
+    }
+
+    results.slice(0, 20).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      row.innerHTML = `
+        <span class="list-item-icon">${item.icon}</span>
+        <div class="list-item-body">
+          <div class="list-item-title">${item.title}</div>
+          <div class="list-item-meta">${item.sub}</div>
+        </div>
+      `;
+      row.addEventListener('click', () => {
+        if (item.type === 'tab' && item.tabId) {
+          chrome.tabs.update(item.tabId, { active: true });
+          window.close();
+        } else if (item.type === 'bookmark' && item.url) {
+          chrome.tabs.create({ url: item.url });
+          window.close();
+        } else if (item.type === 'reading' && item.item) {
+          restoreReadingPosition(item.item);
+        } else if (item.type === 'task') {
+          globalSearchInput.value = '';
+          if (btnSearchClear) btnSearchClear.style.display = 'none';
+          if (panelSearch) panelSearch.style.display = 'none';
+          switchTab('intents');
+        }
+      });
+      searchResultsList.appendChild(row);
+    });
+  }
 
   // ── Render 3: Sessions Tab ──────────────────────────────────────
   function renderSessionsTab() {
