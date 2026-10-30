@@ -39,6 +39,19 @@
     "alarms",
     "scripting"
   ],
+  "chrome_url_overrides": {
+    "newtab": "newtab/newtab.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*",
+        "assets/creature/*",
+        "content/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "host_permissions": [
     "<all_urls>"
   ]

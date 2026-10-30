@@ -113,23 +113,78 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('statusCreature')?.classList.toggle('sleepy', name === 'sleepy');
 
     const emo = {
+      default:   () => {},
       happy:     () => {},
       sleepy:    () => {
         [sEyeL, sEyeR].forEach(e => { e.style.height='2.5px'; e.style.borderRadius='3px 3px 0 0'; });
         sMouth.style.width='7px'; sMouth.style.height='3.5px';
+      },
+      tired:     () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.height='3px'; e.style.borderRadius='3px 3px 0 0'; });
+        sMouth.style.width='8px'; sMouth.style.height='3px';
+      },
+      bored:     () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.height='4px'; e.style.borderRadius='2px'; });
+        sMouth.style.width='8px'; sMouth.style.height='2px'; sMouth.style.borderBottom='2px solid #2d1f0e';
       },
       concerned: () => {
         [sEyeL, sEyeR].forEach(e => { e.style.width='5px'; e.style.height='8px'; e.style.borderRadius='40%'; });
         sMouth.style.borderRadius='10px 10px 0 0'; sMouth.style.borderTop='2px solid #2d1f0e';
         sMouth.style.borderBottom='none'; sMouth.style.width='10px';
       },
+      confused:  () => {
+        sEyeL.style.width='8px'; sEyeL.style.height='8px';
+        sEyeR.style.width='4px'; sEyeR.style.height='4px';
+        sMouth.style.borderRadius='50%'; sMouth.style.width='5px'; sMouth.style.height='5px';
+      },
       curious: () => { sEyeL.style.width='9px'; sEyeL.style.height='9px'; },
       excited: () => {
         sMouth.style.width='16px'; sMouth.style.height='8px';
       },
+      focused: () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.width='6px'; e.style.height='5px'; });
+        sMouth.style.width='8px'; sMouth.style.height='2px';
+      },
+      reading: () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.height='3px'; e.style.borderRadius='0 0 3px 3px'; });
+        sMouth.style.width='8px'; sMouth.style.height='4px';
+      },
+      thinking: () => {
+        sEyeL.style.transform = 'translateY(-2px)';
+        sMouth.style.borderRadius='50%'; sMouth.style.width='5px'; sMouth.style.height='5px';
+      },
       proud: () => {
         sMouth.style.width='18px'; sMouth.style.height='9px';
         statusBody.style.boxShadow='inset -3px -3px 7px rgba(180,140,90,.25),inset 3px 3px 6px rgba(255,255,255,.9),0 0 16px rgba(74,222,128,.5),0 5px 14px rgba(100,70,20,.16)';
+      },
+      cheering: () => {
+        sMouth.style.width='18px'; sMouth.style.height='10px';
+        statusBody.style.boxShadow='0 0 18px rgba(250,204,21,.6)';
+      },
+      love: () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.borderRadius='50% 50% 0 0'; e.style.height='5px'; });
+        sMouth.style.width='10px'; sMouth.style.height='6px';
+        statusBody.style.boxShadow='0 0 16px rgba(244,114,182,.5)';
+      },
+      motivated: () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.width='7px'; e.style.height='6px'; });
+        sMouth.style.width='14px'; sMouth.style.height='7px';
+      },
+      productive: () => {
+        sMouth.style.width='14px'; sMouth.style.height='7px';
+        statusBody.style.boxShadow='0 0 16px rgba(34,197,94,.4)';
+      },
+      sad: () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.borderRadius='50% 50% 0 0'; e.style.height='4px'; });
+        sMouth.style.borderRadius='8px 8px 0 0'; sMouth.style.borderTop='2px solid #2d1f0e'; sMouth.style.borderBottom='none';
+      },
+      decaying: () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.height='3px'; });
+        sMouth.style.borderRadius='8px 8px 0 0'; sMouth.style.borderTop='2px solid #2d1f0e'; sMouth.style.borderBottom='none';
+      },
+      content: () => {
+        [sEyeL, sEyeR].forEach(e => { e.style.height='3px'; e.style.borderRadius='3px 3px 0 0'; });
+        sMouth.style.width='10px'; sMouth.style.height='5px';
       }
     };
     (emo[name] || emo.happy)();
@@ -140,10 +195,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Creature Poke ───────────────────────────────────────────────
   const creatureCard = document.getElementById('creatureCard');
   const pokeQuotes = [
-    { emo: 'excited', title: 'Hehe, that tickles!', sub: 'Watching your tabs closely ✨' },
-    { emo: 'proud',   title: 'Keeping your browser cozy.', sub: 'Clean tabs, clear head 🌱' },
-    { emo: 'curious', title: 'Whatcha exploring today?', sub: 'I will remember where you stop 📖' },
-    { emo: 'happy',   title: 'All systems green!', sub: 'Nook is quietly helping in background 🌿' }
+    { emo: 'excited',    title: 'Hehe, that tickles!', sub: 'Watching your tabs closely ✨' },
+    { emo: 'proud',      title: 'Keeping your browser cozy.', sub: 'Clean tabs, clear head 🌱' },
+    { emo: 'focused',    title: 'Deep in the zone!', sub: 'Distraction-free browsing dock 🎯' },
+    { emo: 'reading',    title: 'I saved your scroll depth.', sub: 'Jump Back anytime you return 📖' },
+    { emo: 'curious',    title: 'Whatcha exploring today?', sub: 'I will remember where you stop 🔍' },
+    { emo: 'productive', title: 'Crushing your missions!', sub: 'Bento To-Do board updated 🍱' },
+    { emo: 'love',       title: 'Cozy browsing vibes.', sub: '100% on-device private memory 💚' },
+    { emo: 'happy',      title: 'All systems green!', sub: 'Nook is quietly helping in background 🌿' }
   ];
   let pokeIdx = 0;
   creatureCard?.addEventListener('click', () => {
