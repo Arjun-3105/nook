@@ -39,9 +39,6 @@
     "alarms",
     "scripting"
   ],
-  "chrome_url_overrides": {
-    "newtab": "newtab/newtab.html"
-  },
   "web_accessible_resources": [
     {
       "resources": [
