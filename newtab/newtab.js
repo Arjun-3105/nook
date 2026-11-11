@@ -1,1 +1,0 @@
-// Plain screen - no scripts
