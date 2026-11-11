@@ -1,0 +1,5 @@
+assets/creature_backup/
+newtab_backup/
+brag-output*/
+node_modules/
+.DS_Store
